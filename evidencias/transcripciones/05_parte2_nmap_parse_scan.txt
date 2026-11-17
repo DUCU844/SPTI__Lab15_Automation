@@ -1,0 +1,180 @@
+===== Parte 1 C - CLI con argparse (scanner.py, version final) =====
+kali@kali:~/lab15$ python3 scanner.py --help
+usage: scanner.py [-h] [--ports PORTS] [--rate RATE] [--timeout TIMEOUT]
+                  [--output OUTPUT] [--jitter JITTER] [--retry-unknown]
+                  [--scope SCOPE]
+                  target
+
+Concurrent TCP connect port scanner (asyncio). Scan only hosts you are
+authorized to scan.
+
+positional arguments:
+  target             IP address to scan
+
+options:
+  -h, --help         show this help message and exit
+  --ports PORTS      port range, e.g. 1-1024 or 22,80,443 (default: 1-1024)
+  --rate RATE        max concurrent connections (default: 200)
+  --timeout TIMEOUT  per-port timeout in seconds (default: 0.5)
+  --output OUTPUT    JSON output file (default: stdout)
+  --jitter JITTER    max random delay in seconds before each probe (default:
+                     0, no jitter)
+  --retry-unknown    re-scan at low concurrency (rate 50) every port whose
+                     probe failed with an OS error or timed out
+  --scope SCOPE      scope file; refuse to scan unless the target and the
+                     current time are authorized
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --ports 22,80,443 --rate 50 --timeout 1 | head -9
+{
+  "target": "10.0.2.15",
+  "scan_time_seconds": 0.002,
+  "timestamp": "2026-11-16T21:59:43",
+  "open_ports": [
+    22,
+    80
+  ],
+  "ports_scanned": 3,
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --ports 70000; python3 scanner.py no-es-ip
+usage: scanner.py [-h] [--ports PORTS] [--rate RATE] [--timeout TIMEOUT]
+                  [--output OUTPUT] [--jitter JITTER] [--retry-unknown]
+                  [--scope SCOPE]
+                  target
+scanner.py: error: argument --ports: port range out of bounds (1-65535): '70000'
+usage: scanner.py [-h] [--ports PORTS] [--rate RATE] [--timeout TIMEOUT]
+                  [--output OUTPUT] [--jitter JITTER] [--retry-unknown]
+                  [--scope SCOPE]
+                  target
+scanner.py: error: argument target: not an IP address: 'no-es-ip'
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.2 --scope scope.txt; echo "exit code: $?"
+[scope] REFUSED: 10.0.2.2 is not authorized by scope.txt (allowed: ['10.0.2.15'])
+exit code: 1
+===== Parte 2 A - Ingeniero: nmap -sV con salida XML contra la unica direccion de scope.txt =====
+kali@kali:~/lab15$ nmap -sV --open -oX part2/scan.xml 10.0.2.15
+Starting Nmap 7.99 ( https://nmap.org ) at 2026-11-16 21:59 -0500
+Stats: 0:00:00 elapsed; 0 hosts completed (0 up), 0 undergoing Host Discovery
+Parallel DNS resolution of 1 host. Timing: About 0.00% done
+Nmap scan report for 10.0.2.15
+Host is up (0.000044s latency).
+Not shown: 995 filtered tcp ports (no-response)
+Some closed ports may be reported as filtered due to --defeat-rst-ratelimit
+PORT    STATE SERVICE VERSION
+22/tcp  open  ssh     OpenSSH 10.3p1 Debian 4 (protocol 2.0)
+80/tcp  open  http    Apache httpd 2.4.68 ((Debian))
+311/tcp open  http    SimpleHTTPServer 0.6 (Python 3.14.7)
+444/tcp open  http    SimpleHTTPServer 0.6 (Python 3.14.7)
+808/tcp open  http    SimpleHTTPServer 0.6 (Python 3.14.7)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 12.50 seconds
+===== Estructura del XML: host > address / hostnames / ports > port > state + service(name, product, version) =====
+kali@kali:~/lab15$ sed -n "/<host /,/<\/host>/p" part2/scan.xml | sed "s/<cpe>[^<]*<\/cpe>//g" | cut -c1-235
+<host starttime="1794884388" endtime="1794884398"><status state="up" reason="localhost-response" reason_ttl="0"/>
+<address addr="10.0.2.15" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+<ports><extraports state="filtered" count="995">
+<extrareasons reason="no-response" count="995" proto="tcp" ports="1,3-4,6-7,9,13,17,19-21,23-26,30,32-33,37,42-43,49,53,70,79,81-85,88-90,99-100,106,109-111,113,119,125,135,139,143-144,146,161,163,179,199,211-212,222,254-256,259,264,28
+</extraports>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ssh" product="OpenSSH" version="10.3p1 Debian 4" extrainfo="protocol 2.0" ostype="Linux" method="probed" conf="10"></service></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="Apache httpd" version="2.4.68" extrainfo="(Debian)" method="probed" conf="10"></service></port>
+<port protocol="tcp" portid="311"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="SimpleHTTPServer" version="0.6" extrainfo="Python 3.14.7" method="probed" conf="10"></service></port>
+<port protocol="tcp" portid="444"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="SimpleHTTPServer" version="0.6" extrainfo="Python 3.14.7" method="probed" conf="10"></service></port>
+<port protocol="tcp" portid="808"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="SimpleHTTPServer" version="0.6" extrainfo="Python 3.14.7" method="probed" conf="10"></service></port>
+</ports>
+<times srtt="44" rttvar="919" to="100000"/>
+</host>
+===== Parte 2 B/C/D - parse_scan.py (xml.etree.ElementTree + ssh-keyscan) -> hosts.json =====
+kali@kali:~/lab15$ python3 parse_scan.py --help | head -8
+usage: parse_scan.py [-h] --input INPUT --output OUTPUT
+                     [--keyscan-timeout KEYSCAN_TIMEOUT]
+
+Parse nmap XML (-oX) and enrich SSH hosts with host-key types
+
+options:
+  -h, --help            show this help message and exit
+  --input INPUT         nmap XML file (from -oX)
+kali@kali:~/lab15$ ssh-keyscan -T 5 10.0.2.15 2>/dev/null | cut -c1-70
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+10.0.2.15 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlz
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+10.0.2.15 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCssnotobykPpe0EspBBQDT
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+10.0.2.15 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILUUqVrV3klBp0gkdiWEjfyc
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+kali@kali:~/lab15$ python3 parse_scan.py --input part2/scan.xml --output part2/hosts.json
+10.0.2.15 (no hostname): 22/ssh, 80/http, 311/http, 444/http, 808/http | ssh host key: ssh-ed25519
+1 live host(s) written to part2/hosts.json
+kali@kali:~/lab15$ cat part2/hosts.json
+[
+  {
+    "ip": "10.0.2.15",
+    "hostname": null,
+    "open_ports": [
+      {
+        "port": 22,
+        "service": "ssh",
+        "version": "OpenSSH 10.3p1 Debian 4"
+      },
+      {
+        "port": 80,
+        "service": "http",
+        "version": "Apache httpd 2.4.68"
+      },
+      {
+        "port": 311,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      },
+      {
+        "port": 444,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      },
+      {
+        "port": 808,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      }
+    ],
+    "ssh_host_key_type": "ssh-ed25519",
+    "ssh_host_key_types": [
+      "ssh-ed25519",
+      "ecdsa-sha2-nistp256",
+      "ssh-rsa"
+    ],
+    "ssh_legacy_key": false
+  }
+]
+===== Caso sin respuesta de SSH y XML invalido (el script no se cae) =====
+kali@kali:~/lab15$ sed "s/portid=\"22\"/portid=\"2222\"/" part2/scan.xml > /tmp/scan_nossh.xml; python3 parse_scan.py --input /tmp/scan_nossh.xml --output /tmp/hosts_nossh.json 2>/dev/null; grep -A6 ssh_host_key_type /tmp/hosts_nossh.json
+    "ssh_host_key_type": null,
+    "ssh_host_key_types": [],
+    "ssh_legacy_key": false,
+    "ssh_keyscan_error": "no host key received (exit 1: no keys returned)"
+  }
+]
+kali@kali:~/lab15$ python3 parse_scan.py --input scope.txt --output /tmp/x.json; echo "exit code: $?"
+error: cannot parse scope.txt: syntax error: line 1, column 0
+exit code: 1
+===== Lo que vio el OBJETIVO durante los escaneos (logs de los listeners): -sV si deja rastro en la aplicacion =====
+kali@kali:~/lab15$ wc -l /tmp/lab15_target/listener_*.log
+  15 /tmp/lab15_target/listener_311.log
+  16 /tmp/lab15_target/listener_444.log
+  15 /tmp/lab15_target/listener_808.log
+  46 total
+kali@kali:~/lab15$ grep -v "Serving HTTP" /tmp/lab15_target/listener_311.log | cut -c1-200 | tail -22
+10.0.2.15 - - [16/Nov/2026 21:42:19] "GET / HTTP/1.1" 200 -
+10.0.2.15 - - [16/Nov/2026 21:53:00] "GET / HTTP/1.1" 200 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET / HTTP/1.0" 200 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET / HTTP/1.0" 200 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] code 501, message Unsupported method ('POST')
+10.0.2.15 - - [16/Nov/2026 21:59:58] "POST /sdk HTTP/1.1" 501 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] code 404, message File not found
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET /nmaplowercheck1794884398 HTTP/1.1" 404 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] code 404, message File not found
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET /HNAP1 HTTP/1.1" 404 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] code 404, message File not found
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET /evox/about HTTP/1.1" 404 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET / HTTP/1.0" 200 -
+10.0.2.15 - - [16/Nov/2026 21:59:58] "GET / HTTP/1.1" 200 -

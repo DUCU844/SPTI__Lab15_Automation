@@ -1,0 +1,30 @@
+2026-11-16T22:13:08.391-05:00 START  recon.py target=example.com mode=domain output=sample_output/domain_mode argv=example.com --verbose --output sample_output/domain_mode
+2026-11-16T22:13:08.399-05:00 STAGE  whois start
+2026-11-16T22:13:08.408-05:00 RUN    whois example.com
+2026-11-16T22:13:09.739-05:00 OK     whois example.com -> exit 0 in 1.31s, 3502 bytes of output
+2026-11-16T22:13:09.795-05:00 WRITE  raw/whois.txt (3502 bytes)
+2026-11-16T22:13:09.812-05:00 STAGE  whois end status=ok
+2026-11-16T22:13:09.826-05:00 STAGE  dig start
+2026-11-16T22:13:09.834-05:00 RUN    dig +short +time=5 +tries=2 example.com A
+2026-11-16T22:13:10.087-05:00 OK     dig +short +time=5 +tries=2 example.com A -> exit 0 in 0.23s, 29 bytes of output
+2026-11-16T22:13:10.144-05:00 WRITE  raw/dig_A.txt (29 bytes)
+2026-11-16T22:13:10.154-05:00 RUN    dig +short +time=5 +tries=2 example.com MX
+2026-11-16T22:13:10.278-05:00 OK     dig +short +time=5 +tries=2 example.com MX -> exit 0 in 0.12s, 4 bytes of output
+2026-11-16T22:13:10.298-05:00 WRITE  raw/dig_MX.txt (4 bytes)
+2026-11-16T22:13:10.308-05:00 RUN    dig +short +time=5 +tries=2 example.com NS
+2026-11-16T22:13:10.423-05:00 OK     dig +short +time=5 +tries=2 example.com NS -> exit 0 in 0.11s, 51 bytes of output
+2026-11-16T22:13:10.444-05:00 WRITE  raw/dig_NS.txt (51 bytes)
+2026-11-16T22:13:10.452-05:00 RUN    dig +short +time=5 +tries=2 example.com TXT
+2026-11-16T22:13:10.673-05:00 OK     dig +short +time=5 +tries=2 example.com TXT -> exit 0 in 0.10s, 49 bytes of output
+2026-11-16T22:13:10.824-05:00 WRITE  raw/dig_TXT.txt (49 bytes)
+2026-11-16T22:13:10.864-05:00 STAGE  dig end status=ok
+2026-11-16T22:13:10.884-05:00 STAGE  curl start
+2026-11-16T22:13:10.906-05:00 RUN    curl -sS -I -L --max-redirs 3 --max-time 15 https://example.com/
+2026-11-16T22:13:11.371-05:00 OK     curl -sS -I -L --max-redirs 3 --max-time 15 https://example.com/ -> exit 0 in 0.44s, 276 bytes of output
+2026-11-16T22:13:11.406-05:00 WRITE  raw/curl_headers.txt (276 bytes)
+2026-11-16T22:13:11.414-05:00 STAGE  curl end status=ok
+2026-11-16T22:13:11.423-05:00 STAGE  nmap skipped (domain mode)
+2026-11-16T22:13:11.444-05:00 WRITE  results.json (1629 bytes)
+2026-11-16T22:13:11.459-05:00 READ   results.json (to generate report.md)
+2026-11-16T22:13:11.481-05:00 WRITE  report.md (2060 bytes)
+2026-11-16T22:13:11.489-05:00 END    exit=0 failed_stages=none

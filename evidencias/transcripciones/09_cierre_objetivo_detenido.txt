@@ -1,0 +1,23 @@
+===== Cierre - se detiene el objetivo: listeners apagados y SSH devuelto a su estado inicial =====
+kali@kali:~/lab15$ date; grep Window scope.txt
+Mon Nov 16 10:17:43 PM EST 2026
+Window: 2026-11-16T21:30 to 2026-11-17T01:30   (local time of the VM, UTC-05:00)
+>>> El directorio de control quedo como root: se necesita sudo una vez mas. Escribe AQUI tu contraseña de sudo y pulsa Enter:
+kali@kali:~/lab15$ sudo -n touch /tmp/lab15_target/STOP; sleep 6; cat /tmp/lab15_target.out
+2026-11-16T21:42:15-05:00 target ready: ssh=active listeners=311 444 808 pids=7085 7087 7089
+2026-11-16T22:18:09-05:00 target stopped (ssh back to: inactive)
+kali@kali:~/lab15$ systemctl is-active ssh
+inactive
+kali@kali:~/lab15$ ss -ltn | grep -E "State|:(22|80|311|444|808) "
+State  Recv-Q Send-Q Local Address:Port Peer Address:Port
+LISTEN 0      511                *:80              *:*
+kali@kali:~/lab15$ for p in 311 444 808; do curl -s -o /dev/null -m 3 -w "http://10.0.2.15:$p -> HTTP %{http_code}\n" http://10.0.2.15:$p/; done
+http://10.0.2.15:311 -> HTTP 000
+http://10.0.2.15:444 -> HTTP 000
+http://10.0.2.15:808 -> HTTP 000
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --scope scope.txt | grep -A3 open_ports
+[scope] 10.0.2.15 authorized by scope.txt
+  "open_ports": [
+    80
+  ],
+  "ports_scanned": 1024,

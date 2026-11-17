@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "tool": "recon.py",
+    "target": "10.0.2.15",
+    "mode": "ip",
+    "started": "2026-11-16T22:12:40-05:00",
+    "finished": "2026-11-16T22:12:52-05:00",
+    "stage_status": {
+      "whois": "ok",
+      "dig": "ok",
+      "curl": "ok",
+      "nmap": "ok"
+    }
+  },
+  "nmap": {
+    "command": "nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15",
+    "scope_of_scan": "100 most common TCP ports (--top-ports 100); other ports were NOT probed",
+    "host_up": true,
+    "ip": "10.0.2.15",
+    "hostname": null,
+    "open_ports": [
+      {
+        "port": 22,
+        "protocol": "tcp",
+        "service": "ssh",
+        "version": "OpenSSH 10.3p1 Debian 4"
+      },
+      {
+        "port": 80,
+        "protocol": "tcp",
+        "service": "http",
+        "version": "Apache httpd 2.4.68"
+      },
+      {
+        "port": 444,
+        "protocol": "tcp",
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      }
+    ],
+    "status": "ok"
+  },
+  "dig": {
+    "query": "-x 10.0.2.15",
+    "records": {
+      "PTR": []
+    },
+    "status": "ok"
+  },
+  "whois": {
+    "query": "10.0.2.15",
+    "organization": "Internet Assigned Numbers Authority",
+    "country": "US",
+    "network_name": "PRIVATE-ADDRESS-ABLK-RFC1918-IANA-RESERVED",
+    "network_range": "10.0.0.0 - 10.255.255.255",
+    "note": "private (RFC 1918) address: whois describes the reserved block, not the organization that operates this host",
+    "fields_not_found": [],
+    "status": "ok"
+  },
+  "curl": {
+    "responses": [
+      {
+        "url": "http://10.0.2.15:80/",
+        "status_line": "HTTP/1.1 200 OK",
+        "headers": {
+          "server": "Apache/2.4.68 (Debian)",
+          "x-powered-by": null,
+          "content-security-policy": null,
+          "strict-transport-security": null,
+          "x-frame-options": null
+        },
+        "missing_security_headers": [
+          "Content-Security-Policy (CSP)",
+          "Strict-Transport-Security (HSTS)",
+          "X-Frame-Options"
+        ]
+      },
+      {
+        "url": "http://10.0.2.15:444/",
+        "status_line": "HTTP/1.0 200 OK",
+        "headers": {
+          "server": "SimpleHTTP/0.6 Python/3.14.7",
+          "x-powered-by": null,
+          "content-security-policy": null,
+          "strict-transport-security": null,
+          "x-frame-options": null
+        },
+        "missing_security_headers": [
+          "Content-Security-Policy (CSP)",
+          "Strict-Transport-Security (HSTS)",
+          "X-Frame-Options"
+        ]
+      }
+    ],
+    "status": "ok"
+  }
+}

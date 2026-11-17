@@ -1,0 +1,39 @@
+===== Parte 0 - Analista: scope.txt (Handoff 1) y clave de respuestas =====
+kali@kali:~/lab15$ cat scope.txt
+SCOPE OF AUTHORIZED SCANNING - Lab 15 (Automation)
+
+Authorized target : 10.0.2.15   (the analyst's own Kali Linux VM, interface eth0)
+Date              : 2026-11-16
+Window: 2026-11-16T21:30 to 2026-11-17T01:30   (local time of the VM, UTC-05:00)
+
+Only this address may be scanned.
+
+Anything else (other hosts, other networks, any time outside the window) is out of scope.
+kali@kali:~/lab15$ cat part0/answer_key.txt
+ANSWER KEY (analyst's private note - not shown to the engineer before Handoff 3)
+Open TCP ports on 10.0.2.15 in the range 1-1024, taken from `ss -ltnp`:
+
+   22   sshd            started for the lab with `sudo systemctl start ssh`
+   80   apache2         was already running on this Kali VM before the lab
+  311   python3 -m http.server 311   (listener 1, empty directory)
+  444   python3 -m http.server 444   (listener 2, empty directory)
+  808   python3 -m http.server 808   (listener 3, empty directory)
+===== Parte 0 - Ingeniero: logs sinteticos con hallazgos plantados (Handoff 2: solo auth.log y access.log) =====
+kali@kali:~/lab15$ python3 part0/gen_auth_log.py --out part3/auth.log --planted planted.json
+part3/auth.log: 368 lines (347 failed, 21 accepted, 137 'invalid user'); planted -> planted.json
+kali@kali:~/lab15$ python3 part0/gen_access_log.py --out part3/access.log --planted planted.json
+part3/access.log: 3415 requests, spike at 19:00 (950), burst at 04:00 (320), 346 attack/probe requests; planted -> planted.json
+kali@kali:~/lab15$ wc -l part3/auth.log part3/access.log
+   368 part3/auth.log
+  3415 part3/access.log
+  3783 total
+kali@kali:~/lab15$ head -2 part3/auth.log; grep -m1 "invalid user" part3/auth.log; grep -m1 Accepted part3/auth.log
+Nov 15 22:04:23 kali sshd[3821]: Failed password for invalid user test from 203.0.113.77 port 26010 ssh2
+Nov 15 22:06:39 kali sshd[5171]: Failed password for invalid user test from 203.0.113.77 port 39507 ssh2
+Nov 15 22:04:23 kali sshd[3821]: Failed password for invalid user test from 203.0.113.77 port 26010 ssh2
+Nov 15 22:07:40 kali sshd[7548]: Accepted publickey for daniel from 192.168.1.1 port 17590 ssh2
+kali@kali:~/lab15$ head -2 part3/access.log
+66.249.66.1 - - [16/Nov/2026:00:00:09 -0500] "GET /contact HTTP/1.1" 200 2256
+66.249.66.1 - - [16/Nov/2026:00:00:57 -0500] "GET /search?q=trade%20union%20select%20committee HTTP/1.1" 200 3051
+kali@kali:~/lab15$ python3 -c "import json;d=json.load(open(\"planted.json\"));print(list(d), list(d[\"auth\"])[:6], list(d[\"web\"])[:6])"
+['auth', 'web'] ['generated', 'seed', 'attacker_ips', 'invalid_user_lines', 'usernames_with_spaces', 'lines_with_space_usernames'] ['generated', 'seed', 'spike_hour', 'spike_requests', 'secondary_burst', 'attack_paths']

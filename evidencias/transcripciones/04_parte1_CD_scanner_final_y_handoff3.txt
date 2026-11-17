@@ -1,0 +1,176 @@
+===== Parte 1 D - salida JSON con --rate 200 y --rate 2000 (Handoff 3: ingeniero -> analista) =====
+kali@kali:~/lab15$ ulimit -n
+1024
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --scope scope.txt --rate 200 --output scan_rate200.json; echo "exit code: $?"
+[scope] 10.0.2.15 authorized by scope.txt
+[done] 5 open ports on 10.0.2.15 in 0.10s -> scan_rate200.json
+exit code: 0
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --scope scope.txt --rate 2000 --output scan_rate2000.json; echo "exit code: $?"
+[scope] 10.0.2.15 authorized by scope.txt
+[warning] --rate 2000 exceeds the soft limit of open files (ulimit -n = 1024): probes beyond it will fail with EMFILE and their ports will be reported as unknown
+[done] 5 open ports on 10.0.2.15 in 0.09s -> scan_rate2000.json
+[WARNING] 6 probes could not be sent {'EMFILE': 6}: those ports are UNKNOWN, not closed. Re-scan at a lower --rate or use --retry-unknown.
+exit code: 3
+kali@kali:~/lab15$ cat scan_rate200.json
+{
+  "target": "10.0.2.15",
+  "scan_time_seconds": 0.096,
+  "timestamp": "2026-11-16T21:56:23",
+  "open_ports": [
+    22,
+    80,
+    311,
+    444,
+    808
+  ],
+  "ports_scanned": 1024,
+  "rate": 200,
+  "timeout": 0.5,
+  "outcomes": {
+    "open": 5,
+    "closed": 1019,
+    "filtered": 0,
+    "error": 0
+  },
+  "errors": {},
+  "filtered_ports": [],
+  "unknown_ports": [],
+  "unknown_ports_truncated": false,
+  "unknown_retried": 0,
+  "complete": true
+}
+===== Parte 1 D - scan_rate2000.json y Handoff 3 (analista compara contra su clave de respuestas) =====
+kali@kali:~/lab15$ cat scan_rate2000.json
+{
+  "target": "10.0.2.15",
+  "scan_time_seconds": 0.092,
+  "timestamp": "2026-11-16T21:56:24",
+  "open_ports": [
+    22,
+    80,
+    311,
+    444,
+    808
+  ],
+  "ports_scanned": 1024,
+  "rate": 2000,
+  "timeout": 0.5,
+  "outcomes": {
+    "open": 5,
+    "closed": 1013,
+    "filtered": 0,
+    "error": 6
+  },
+  "errors": {
+    "EMFILE": 6
+  },
+  "filtered_ports": [],
+  "unknown_ports": [
+    61,
+    231,
+    582,
+    766,
+    802,
+    922
+  ],
+  "unknown_ports_truncated": false,
+  "unknown_retried": 0,
+  "complete": false
+}
+kali@kali:~/lab15$ python3 part1/compare_answer_key.py --key 22,80,311,444,808 scan_rate200.json scan_rate2000.json
+answer key: [22, 80, 311, 444, 808]
+file                                rate  time(s)  found  missed                not in key  probe errors
+scan_rate200.json                    200    0.096   5/5   none                  none        0 {}
+scan_rate2000.json                  2000    0.092   5/5   none                  none        6 {'EMFILE': 6}
+files with at least one known open port missed: 0/2
+===== Handoff 3 - 30 corridas a --rate 2000 sobre 1-1024: ¿con que frecuencia se pierde un puerto abierto conocido? =====
+kali@kali:~/lab15$ for i in $(seq -w 1 30); do python3 scanner.py 10.0.2.15 --rate 2000 --output /tmp/r2000_$i.json 2>/dev/null; done; python3 part1/compare_answer_key.py --key 22,80,311,444,808 /tmp/r2000_??.json
+answer key: [22, 80, 311, 444, 808]
+file                                rate  time(s)  found  missed                not in key  probe errors
+/tmp/r2000_01.json                  2000    0.083   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_02.json                  2000    0.092   4/5   [22]                  none        6 {'EMFILE': 6}
+/tmp/r2000_03.json                  2000    0.078   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_04.json                  2000    0.134   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_05.json                  2000    0.076   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_06.json                  2000    0.115   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_07.json                  2000    0.083   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_08.json                  2000    0.105   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_09.json                  2000    0.092   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_10.json                  2000    0.101   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_11.json                  2000    0.082   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_12.json                  2000    0.152   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_13.json                  2000    0.074   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_14.json                  2000    0.108   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_15.json                  2000    0.073   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_16.json                  2000    0.094   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_17.json                  2000    0.072   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_18.json                  2000    0.086   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_19.json                  2000    0.074   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_20.json                  2000    0.111   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_21.json                  2000    0.069   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_22.json                  2000    0.105   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_23.json                  2000    0.077   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_24.json                  2000    0.090   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_25.json                  2000    0.083   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_26.json                  2000    0.089   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_27.json                  2000    0.073   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_28.json                  2000    0.091   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_29.json                  2000    0.075   5/5   none                  none        6 {'EMFILE': 6}
+/tmp/r2000_30.json                  2000    0.097   5/5   none                  none        6 {'EMFILE': 6}
+files with at least one known open port missed: 1/30
+===== Rango completo 1-65535: --rate 200 vs --rate 2000 vs --rate 2000 --retry-unknown (ulimit -n = 1024) =====
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --ports 1-65535 --rate 200 --output part1/scan_full_rate200.json; echo "exit code: $?"
+[done] 5 open ports on 10.0.2.15 in 4.81s -> part1/scan_full_rate200.json
+exit code: 0
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --ports 1-65535 --rate 2000 --output part1/scan_full_rate2000.json; echo "exit code: $?"
+[warning] --rate 2000 exceeds the soft limit of open files (ulimit -n = 1024): probes beyond it will fail with EMFILE and their ports will be reported as unknown
+[done] 0 open ports on 10.0.2.15 in 1.50s -> part1/scan_full_rate2000.json
+[WARNING] 64517 probes could not be sent {'EMFILE': 64517}: those ports are UNKNOWN, not closed. Re-scan at a lower --rate or use --retry-unknown.
+exit code: 3
+kali@kali:~/lab15$ python3 scanner.py 10.0.2.15 --ports 1-65535 --rate 2000 --retry-unknown --output part1/scan_full_rate2000_retry.json; echo "exit code: $?"
+[warning] --rate 2000 exceeds the soft limit of open files (ulimit -n = 1024): probes beyond it will fail with EMFILE and their ports will be reported as unknown
+[retry] 65535 probes failed or timed out; re-scanning them at rate 50
+[done] 5 open ports on 10.0.2.15 in 5.23s -> part1/scan_full_rate2000_retry.json
+exit code: 0
+kali@kali:~/lab15$ python3 part1/compare_answer_key.py --key 22,80,311,444,808 part1/scan_full_rate200.json part1/scan_full_rate2000.json part1/scan_full_rate2000_retry.json
+answer key: [22, 80, 311, 444, 808]
+file                                rate  time(s)  found  missed                not in key  probe errors
+part1/scan_full_rate200.json         200    4.807   5/5   none                  none        0 {}
+part1/scan_full_rate2000.json       2000    1.499   0/5   [22, 80, 311, 444, 808]none        64517 {'EMFILE': 64517}
+part1/scan_full_rate2000_retry.json  2000    5.232   5/5   none                  none        0 {}
+files with at least one known open port missed: 1/3
+kali@kali:~/lab15$ grep -A6 outcomes part1/scan_full_rate2000.json
+  "outcomes": {
+    "open": 0,
+    "closed": 0,
+    "filtered": 1018,
+    "error": 64517
+  },
+  "errors": {
+===== Versiones ingenuas (Parte 1 A/B) sobre 1-65535: los errores se colapsan en "cerrado" =====
+kali@kali:~/lab15$ python3 part1/benchmark.py 10.0.2.15 --expect 22,80,311,444,808 --ports 1-65535 --repeats 2 --json part1/benchmark_full_results.json --markdown part1/benchmark_full_results.md
+Benchmark against 10.0.2.15, ports 1-65535 (65535 ports), answer key [22, 80, 311, 444, 808]
+  sequential   conc=1     median=  0.661s found=5-5/5 missed=[]
+  threads      conc=50    median=  2.937s found=5-5/5 missed=[]
+  threads      conc=200   median=  6.891s found=5-5/5 missed=[]
+  threads      conc=500   median= 11.385s found=5-5/5 missed=[]
+  threads      conc=2000  median= 10.272s found=5-5/5 missed=[]
+  asyncio      conc=50    median=  3.818s found=5-5/5 missed=[]
+  asyncio      conc=200   median=  4.819s found=5-5/5 missed=[]
+  asyncio      conc=500   median=  5.172s found=5-5/5 missed=[]
+  asyncio      conc=2000  median=  1.355s found=0-0/5 missed=[22, 80, 311, 444, 808]
+
+Target 10.0.2.15, 65535 ports, 2 runs per row.
+
+| Version | Concurrency | Median time (s) | Min-max (s) | Known open ports found | Missed (worst run) |
+|---|---:|---:|---:|---:|---|
+| sequential | 1 | 0.661 | 0.655-0.667 | 5/5 | none |
+| threads | 50 | 2.937 | 2.934-2.939 | 5/5 | none |
+| threads | 200 | 6.891 | 6.344-7.437 | 5/5 | none |
+| threads | 500 | 11.385 | 10.738-12.032 | 5/5 | none |
+| threads | 2000 | 10.272 | 10.049-10.495 | 5/5 | none |
+| asyncio | 50 | 3.818 | 3.623-4.012 | 5/5 | none |
+| asyncio | 200 | 4.819 | 4.755-4.883 | 5/5 | none |
+| asyncio | 500 | 5.172 | 5.109-5.235 | 5/5 | none |
+| asyncio | 2000 | 1.355 | 1.352-1.358 | 0/5 | 22, 80, 311, 444, 808 |
+

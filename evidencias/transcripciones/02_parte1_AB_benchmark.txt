@@ -1,0 +1,29 @@
+===== Parte 1 A/B - Ingeniero: secuencial vs ThreadPoolExecutor vs asyncio+Semaphore (3 corridas por fila) =====
+kali@kali:~/lab15$ ulimit -n
+1024
+kali@kali:~/lab15$ python3 part1/benchmark.py 10.0.2.15 --expect 22,80,311,444,808 --json part1/benchmark_results.json --markdown part1/benchmark_results.md
+Benchmark against 10.0.2.15, ports 1-1024 (1024 ports), answer key [22, 80, 311, 444, 808]
+  sequential   conc=1     median=  0.081s found=5-5/5 missed=[]
+  threads      conc=50    median=  0.634s found=5-5/5 missed=[]
+  threads      conc=200   median=  0.481s found=5-5/5 missed=[]
+  threads      conc=500   median=  0.427s found=5-5/5 missed=[]
+  threads      conc=2000  median=  0.512s found=5-5/5 missed=[]
+  asyncio      conc=50    median=  0.259s found=5-5/5 missed=[]
+  asyncio      conc=200   median=  0.332s found=5-5/5 missed=[]
+  asyncio      conc=500   median=  0.344s found=5-5/5 missed=[]
+  asyncio      conc=2000  median=  0.297s found=5-5/5 missed=[]
+
+Target 10.0.2.15, 1024 ports, 3 runs per row.
+
+| Version | Concurrency | Median time (s) | Min-max (s) | Known open ports found | Missed (worst run) |
+|---|---:|---:|---:|---:|---|
+| sequential | 1 | 0.081 | 0.071-0.176 | 5/5 | none |
+| threads | 50 | 0.634 | 0.368-0.716 | 5/5 | none |
+| threads | 200 | 0.481 | 0.390-0.724 | 5/5 | none |
+| threads | 500 | 0.427 | 0.423-0.522 | 5/5 | none |
+| threads | 2000 | 0.512 | 0.438-0.623 | 5/5 | none |
+| asyncio | 50 | 0.259 | 0.217-0.506 | 5/5 | none |
+| asyncio | 200 | 0.332 | 0.290-0.516 | 5/5 | none |
+| asyncio | 500 | 0.344 | 0.286-0.507 | 5/5 | none |
+| asyncio | 2000 | 0.297 | 0.250-0.300 | 5/5 | none |
+

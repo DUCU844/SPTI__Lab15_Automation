@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "tool": "recon.py",
+    "target": "example.com",
+    "mode": "domain",
+    "started": "2026-11-16T22:13:08-05:00",
+    "finished": "2026-11-16T22:13:11-05:00",
+    "stage_status": {
+      "whois": "ok",
+      "dig": "ok",
+      "curl": "ok",
+      "nmap": "skipped"
+    }
+  },
+  "whois": {
+    "query": "example.com",
+    "registrar": "RESERVED-Internet Assigned Numbers Authority",
+    "registration_date": "1995-08-14T04:00:00Z",
+    "expiry_date": "2027-08-13T04:00:00Z",
+    "registrant_organization": "Internet Assigned Numbers Authority",
+    "fields_not_found": [],
+    "status": "ok"
+  },
+  "dig": {
+    "query": "example.com",
+    "records": {
+      "A": [
+        "104.20.23.154",
+        "172.66.147.243"
+      ],
+      "MX": [
+        "0 ."
+      ],
+      "NS": [
+        "elliott.ns.cloudflare.com.",
+        "hera.ns.cloudflare.com."
+      ],
+      "TXT": [
+        "\"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9\"",
+        "\"v=spf1 -all\""
+      ]
+    },
+    "status": "ok"
+  },
+  "curl": {
+    "responses": [
+      {
+        "url": "https://example.com/",
+        "status_line": "HTTP/2 200",
+        "headers": {
+          "server": "cloudflare",
+          "x-powered-by": null,
+          "content-security-policy": null,
+          "strict-transport-security": null,
+          "x-frame-options": null
+        },
+        "missing_security_headers": [
+          "Content-Security-Policy (CSP)",
+          "Strict-Transport-Security (HSTS)",
+          "X-Frame-Options"
+        ]
+      }
+    ],
+    "status": "ok"
+  },
+  "nmap": {
+    "status": "skipped",
+    "reason": "nmap is only run in IP mode"
+  }
+}

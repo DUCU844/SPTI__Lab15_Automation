@@ -1,0 +1,219 @@
+===== Parte 0 - Analista: objetivo autorizado (SSH + 3 listeners HTTP, cada uno desde un directorio vacio) =====
+kali@kali:~/lab15$ ip -4 -br a show eth0
+eth0             UP             10.0.2.15/24 
+kali@kali:~/lab15$ cat /tmp/lab15_target.out
+2026-11-16T21:42:15-05:00 target ready: ssh=active listeners=311 444 808 pids=7085 7087 7089
+kali@kali:~/lab15$ systemctl is-active ssh
+active
+kali@kali:~/lab15$ ss -ltn | grep -E "State|:(22|80|311|444|808) "
+State  Recv-Q Send-Q Local Address:Port Peer Address:Port
+LISTEN 0      5            0.0.0.0:808       0.0.0.0:*
+LISTEN 0      128          0.0.0.0:22        0.0.0.0:*
+LISTEN 0      5            0.0.0.0:311       0.0.0.0:*
+LISTEN 0      5            0.0.0.0:444       0.0.0.0:*
+LISTEN 0      511                *:80              *:*
+LISTEN 0      128             [::]:22           [::]:*
+kali@kali:~/lab15$ ps -eo user,pid,lstart,args | grep -E "http.server|sshd: /" | grep -v grep
+root        7082 Mon Nov 16 21:42:14 2026 sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups
+root        7085 Mon Nov 16 21:42:14 2026 python3 -u -m http.server 311
+root        7087 Mon Nov 16 21:42:14 2026 python3 -u -m http.server 444
+root        7089 Mon Nov 16 21:42:14 2026 python3 -u -m http.server 808
+kali@kali:~/lab15$ ls -la /tmp/lab15_target/ /tmp/lab15_target/www_311
+/tmp/lab15_target/:
+total 12
+drwxr-xr-x  5 root root  160 Nov 16 21:42 .
+drwxrwxrwt 20 root root  540 Nov 16 22:09 ..
+-rw-r--r--  1 root root  995 Nov 16 21:59 listener_311.log
+-rw-r--r--  1 root root 3787 Nov 16 22:04 listener_444.log
+-rw-r--r--  1 root root  995 Nov 16 21:59 listener_808.log
+drwxr-xr-x  2 root root   40 Nov 16 21:42 www_311
+drwxr-xr-x  2 root root   40 Nov 16 21:42 www_444
+drwxr-xr-x  2 root root   40 Nov 16 21:42 www_808
+
+/tmp/lab15_target/www_311:
+total 0
+drwxr-xr-x 2 root root  40 Nov 16 21:42 .
+drwxr-xr-x 5 root root 160 Nov 16 21:42 ..
+kali@kali:~/lab15$ for p in 311 444 808; do curl -s -o /dev/null -w "http://10.0.2.15:$p -> HTTP %{http_code}\n" http://10.0.2.15:$p/; done
+http://10.0.2.15:311 -> HTTP 200
+http://10.0.2.15:444 -> HTTP 200
+http://10.0.2.15:808 -> HTTP 200
+===== Parte 2 B/C/D - parse_scan.py (xml.etree.ElementTree + ssh-keyscan) -> hosts.json =====
+kali@kali:~/lab15$ python3 parse_scan.py --help
+usage: parse_scan.py [-h] --input INPUT --output OUTPUT
+                     [--keyscan-timeout KEYSCAN_TIMEOUT]
+
+Parse nmap XML (-oX) and enrich SSH hosts with host-key types
+
+options:
+  -h, --help            show this help message and exit
+  --input INPUT         nmap XML file (from -oX)
+  --output OUTPUT       JSON output file
+  --keyscan-timeout KEYSCAN_TIMEOUT
+                        ssh-keyscan timeout in seconds (default 5)
+kali@kali:~/lab15$ ssh-keyscan -T 5 10.0.2.15 2>/dev/null | cut -c1-70
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+10.0.2.15 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCssnotobykPpe0EspBBQDT
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+10.0.2.15 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlz
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+10.0.2.15 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILUUqVrV3klBp0gkdiWEjfyc
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+# 10.0.2.15:22 SSH-2.0-OpenSSH_10.3p1 Debian-4
+kali@kali:~/lab15$ python3 parse_scan.py --input part2/scan.xml --output part2/hosts.json
+10.0.2.15 (no hostname): 22/ssh, 80/http, 311/http, 444/http, 808/http | ssh host key: ssh-ed25519
+1 live host(s) written to part2/hosts.json
+===== Casos de error: SSH que no responde y XML invalido (el script no se cae) =====
+kali@kali:~/lab15$ sed "s/portid=\"22\"/portid=\"2222\"/" part2/scan.xml > /tmp/scan_nossh.xml; python3 parse_scan.py --input /tmp/scan_nossh.xml --output /tmp/hosts_nossh.json 2>/dev/null; grep -A6 ssh_host_key_type /tmp/hosts_nossh.json
+    "ssh_host_key_type": null,
+    "ssh_host_key_types": [],
+    "ssh_legacy_key": false,
+    "ssh_keyscan_error": "no host key received (exit 1: no keys returned)"
+  }
+]
+kali@kali:~/lab15$ python3 parse_scan.py --input scope.txt --output /tmp/x.json; echo "exit code: $?"
+error: cannot parse scope.txt: syntax error: line 1, column 0
+exit code: 1
+===== Parte 2 D - hosts.json (lista enriquecida de hosts) =====
+kali@kali:~/lab15$ cat part2/hosts.json
+[
+  {
+    "ip": "10.0.2.15",
+    "hostname": null,
+    "open_ports": [
+      {
+        "port": 22,
+        "service": "ssh",
+        "version": "OpenSSH 10.3p1 Debian 4"
+      },
+      {
+        "port": 80,
+        "service": "http",
+        "version": "Apache httpd 2.4.68"
+      },
+      {
+        "port": 311,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      },
+      {
+        "port": 444,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      },
+      {
+        "port": 808,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      }
+    ],
+    "ssh_host_key_type": "ssh-ed25519",
+    "ssh_host_key_types": [
+      "ssh-ed25519",
+      "ecdsa-sha2-nistp256",
+      "ssh-rsa"
+    ],
+    "ssh_legacy_key": false
+  }
+]
+===== Parte 3 E - report.md combinado de A-D (Handoff 4: analista -> ingeniero) =====
+kali@kali:~/lab15$ python3 part3/build_report.py --auth part3/auth.log --access part3/access.log --output part3/report.md --json part3/analysis.json
+report written to part3/report.md, findings to part3/analysis.json
+kali@kali:~/lab15$ grep -n "^## " part3/report.md
+7:## Summary
+16:## 1. SSH brute-force sources (auth.log)
+26:## 2. Targeted user accounts
+43:## 3. Failed vs successful logins
+49:## 4. Successful logins after failures (possible compromise)
+57:## 5. Suspicious web requests (access.log)
+80:## 6. Top 5 IPs by request volume
+90:## 7. HTTP status code distribution
+98:## 8. Traffic anomalies (hourly request counts)
+kali@kali:~/lab15$ head -44 part3/report.md | cut -c1-200
+# Log analysis report (Part 3)
+
+- Generated: 2026-11-16T22:09:14
+- Inputs: `part3/auth.log` (368 login events), `part3/access.log` (3415 requests)
+- Analyzers: `Lab15/auth_analysis.py`, `Lab15/log_analysis.py`
+
+## Summary
+
+- **3** address(es) exceeded 10 failed SSH logins: 203.0.113.77 (240), 198.51.100.23 (85), 192.168.1.50 (12)
+- **10** user names were guessed; 137 failures were for accounts that do not exist
+- Failed:successful logins = 347:21 (**16.52:1**)
+- **Possible compromise**: `admin` logged in from 203.0.113.77 after 240 failures
+- **413** web requests matched an attack pattern (12 distinct paths)
+- Anomalous hours: 19:00 (950 requests), 04:00 (320 requests)
+
+## 1. SSH brute-force sources (auth.log)
+
+IPs with more than 10 failed logins, sorted by attempts:
+
+| IP | Failed attempts | Distinct user names | Attack style |
+|---|---:|---:|---|
+| 203.0.113.77 | 240 | 10 | wordlist (10 user names) |
+| 198.51.100.23 | 85 | 1 | targeted (only `root`) |
+| 192.168.1.50 | 12 | 1 | targeted (only `daniel`) |
+
+## 2. Targeted user accounts
+
+| User | Failed attempts | Account exists? |
+|---|---:|---|
+| `root` | 115 | yes |
+| `daniel` | 45 | yes |
+| `guest` | 30 | no (`invalid user`) |
+| `test` | 27 | no (`invalid user`) |
+| `ubuntu` | 26 | yes |
+| `web master` | 25 | no (`invalid user`) |
+| `postgres` | 25 | no (`invalid user`) |
+| `admin` | 24 | yes |
+| `oracle` | 17 | no (`invalid user`) |
+| `backup admin` | 13 | no (`invalid user`) |
+
+Failed logins for nonexistent accounts (`invalid user` lines): **137**
+
+## 3. Failed vs successful logins
+
+===== Ingeniero: puntaje final (analizadores corregidos) contra planted.json =====
+kali@kali:~/lab15$ python3 part3/score_findings.py planted.json part3/analysis.json --label "v2 (after the fixes)" | tee part3/score_v2.md
+### Score: v2 (after the fixes)
+
+**27/27 planted items detected, 0 missed, 2 false positive(s).**
+
+| Category | Planted item | Detected | Detail |
+|---|---|:---:|---|
+| auth: attacker IP | 203.0.113.77 with 240 failures | yes | reported 240 failures |
+| auth: attacker IP | 198.51.100.23 with 85 failures | yes | reported 85 failures |
+| auth: invalid-user lines | 137 `invalid user` failures | yes | reported 137 |
+| auth: targeted user | `root` | yes | listed |
+| auth: targeted user | `admin` | yes | listed |
+| auth: targeted user | `ubuntu` | yes | listed |
+| auth: targeted user | `daniel` | yes | listed |
+| auth: targeted user | `oracle` | yes | listed |
+| auth: targeted user | `test` | yes | listed |
+| auth: targeted user | `postgres` | yes | listed |
+| auth: targeted user | `guest` | yes | listed |
+| auth: targeted user | `backup admin` | yes | listed |
+| auth: targeted user | `web master` | yes | listed |
+| auth: compromise | `admin` accepted from 203.0.113.77 after failures | yes | reported (240 prior failures) |
+| web: sql_injection | `/?id=1%27%20UNION%20SELECT%201,2,3--` | yes | flagged 22/22 requests |
+| web: sql_injection | `/login?user=admin%27%20OR%20%271%27%3D%271` | yes | flagged 30/30 requests |
+| web: sql_injection | `/item?id=5 UNION SELECT username,password FROM users--` | yes | flagged 33/33 requests |
+| web: path_traversal | `/download?file=..%2F..%2F..%2Fetc%2Fpasswd` | yes | flagged 25/25 requests |
+| web: path_traversal | `/static/%252e%252e%252f%252e%252e%252fetc%252fshadow` | yes | flagged 35/35 requests |
+| web: xss | `/search?q=%3Cscript%3Ealert(document.cookie)%3C%2Fscript%3E` | yes | flagged 31/31 requests |
+| web: xss | `/comment?text=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E` | yes | flagged 31/31 requests |
+| web: command_injection | `/cgi-bin/status.cgi?cmd=cat%20%2Fetc%2Fpasswd` | yes | flagged 30/30 requests |
+| web: command_injection | `/ping?host=127.0.0.1%3Bcat%20%2Fetc%2Fpasswd` | yes | flagged 38/38 requests |
+| web: probe | `/wp-admin/` | yes | flagged |
+| web: probe | `/.env` | yes | flagged |
+| web: spike | 19:00 with 950 requests | yes | 3-sigma, z=4.53 |
+| web: secondary burst | 04:00 with 320 requests | yes | median/MAD, robust z=15.0 (3-sigma z=1.0) |
+
+Report items that were NOT planted (false positives):
+
+| Category | Reported item | Origin |
+|---|---|---|
+| auth: brute-force IP | 192.168.1.50 (12 failures) | benign noise planted by the engineer |
+| web: sql_injection | `/search?q=trade%20union%20select%20committee` (67 requests) | benign look-alike planted by the engineer |
+

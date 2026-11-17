@@ -1,0 +1,29 @@
+2026-11-16T22:12:40.444-05:00 START  recon.py target=10.0.2.15 mode=ip output=sample_output argv=10.0.2.15 --verbose --output sample_output
+2026-11-16T22:12:40.449-05:00 STAGE  nmap start
+2026-11-16T22:12:40.460-05:00 RUN    nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15
+2026-11-16T22:12:50.644-05:00 OK     nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15 -> exit 0 in 10.18s, 668 bytes of output
+2026-11-16T22:12:50.663-05:00 WRITE  raw/nmap_stdout.txt (668 bytes)
+2026-11-16T22:12:50.674-05:00 READ   raw/nmap.xml (2913 bytes, parsed with xml.etree.ElementTree)
+2026-11-16T22:12:50.686-05:00 STAGE  nmap end status=ok
+2026-11-16T22:12:50.692-05:00 STAGE  dig start
+2026-11-16T22:12:50.698-05:00 RUN    dig +short +time=5 +tries=2 -x 10.0.2.15
+2026-11-16T22:12:51.202-05:00 OK     dig +short +time=5 +tries=2 -x 10.0.2.15 -> exit 0 in 0.48s, 0 bytes of output
+2026-11-16T22:12:51.354-05:00 WRITE  raw/dig_reverse.txt (0 bytes)
+2026-11-16T22:12:51.365-05:00 STAGE  dig end status=ok
+2026-11-16T22:12:51.372-05:00 STAGE  whois start
+2026-11-16T22:12:51.379-05:00 RUN    whois 10.0.2.15
+2026-11-16T22:12:52.022-05:00 OK     whois 10.0.2.15 -> exit 0 in 0.63s, 2736 bytes of output
+2026-11-16T22:12:52.048-05:00 WRITE  raw/whois.txt (2736 bytes)
+2026-11-16T22:12:52.059-05:00 STAGE  whois end status=ok
+2026-11-16T22:12:52.069-05:00 STAGE  curl start
+2026-11-16T22:12:52.079-05:00 RUN    curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:80/
+2026-11-16T22:12:52.108-05:00 OK     curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:80/ -> exit 0 in 0.02s, 245 bytes of output
+2026-11-16T22:12:52.127-05:00 WRITE  raw/curl_headers_80.txt (245 bytes)
+2026-11-16T22:12:52.133-05:00 RUN    curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:444/
+2026-11-16T22:12:52.162-05:00 OK     curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:444/ -> exit 0 in 0.02s, 149 bytes of output
+2026-11-16T22:12:52.178-05:00 WRITE  raw/curl_headers_444.txt (149 bytes)
+2026-11-16T22:12:52.183-05:00 STAGE  curl end status=ok
+2026-11-16T22:12:52.199-05:00 WRITE  results.json (2575 bytes)
+2026-11-16T22:12:52.211-05:00 READ   results.json (to generate report.md)
+2026-11-16T22:12:52.227-05:00 WRITE  report.md (3003 bytes)
+2026-11-16T22:12:52.232-05:00 END    exit=0 failed_stages=none

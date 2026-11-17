@@ -1,0 +1,617 @@
+===== Parte 4 - recon.py: CLI (argparse) y deteccion automatica de modo =====
+kali@kali:~/lab15$ python3 recon.py --help
+usage: recon.py [-h] [--mode {domain,ip}] [--output OUTPUT] [--verbose]
+                [--from-results JSON]
+                target
+
+Multi-stage reconnaissance of a domain (whois, dig, curl -I) or an IP address
+(nmap -sV, dig -x, whois). Scan only targets you are authorized to scan.
+
+positional arguments:
+  target               domain name or IP address
+
+options:
+  -h, --help           show this help message and exit
+  --mode {domain,ip}   auto-detected if omitted
+  --output OUTPUT      directory for output files (default:
+                       ./recon_<target>_<timestamp>/)
+  --verbose            print progress to stderr as the tool runs
+  --from-results JSON  do not run any stage: rebuild report.md from an
+                       existing results.json
+kali@kali:~/lab15$ python3 recon.py "no valido"; python3 recon.py 10.0.2.15 --mode domain; python3 recon.py example.com --mode ip
+usage: recon.py [-h] [--mode {domain,ip}] [--output OUTPUT] [--verbose]
+                [--from-results JSON]
+                target
+recon.py: error: 'no valido' is neither an IP address nor a valid domain name
+usage: recon.py [-h] [--mode {domain,ip}] [--output OUTPUT] [--verbose]
+                [--from-results JSON]
+                target
+recon.py: error: --mode domain does not match the target '10.0.2.15' (it looks like an IP address)
+usage: recon.py [-h] [--mode {domain,ip}] [--output OUTPUT] [--verbose]
+                [--from-results JSON]
+                target
+recon.py: error: --mode ip does not match the target 'example.com' (it looks like a domain name)
+===== Parte 4 - Modo IP contra la direccion de scope.txt (salida de muestra en sample_output/) =====
+kali@kali:~/lab15$ grep -E "target|Window|Only" scope.txt
+Authorized target : 10.0.2.15   (the analyst's own Kali Linux VM, interface eth0)
+Window: 2026-11-16T21:30 to 2026-11-17T01:30   (local time of the VM, UTC-05:00)
+Only this address may be scanned.
+kali@kali:~/lab15$ python3 recon.py 10.0.2.15 --verbose --output sample_output; echo "exit code: $?"
+[recon] target=10.0.2.15 mode=ip output=sample_output/
+[recon] stage nmap ...
+[recon] $ nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15
+[recon] stage dig ...
+[recon] $ dig +short +time=5 +tries=2 -x 10.0.2.15
+[recon] stage whois ...
+[recon] $ whois 10.0.2.15
+[recon] stage curl ...
+[recon] $ curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:80/
+[recon] $ curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:444/
+[recon] done: sample_output/results.json, sample_output/report.md, sample_output/audit.log
+sample_output/
+exit code: 0
+kali@kali:~/lab15$ ls -la sample_output sample_output/raw
+sample_output:
+total 20
+drwxrwx--- 1 root vboxsf    0 Nov 16  2026 .
+drwxrwx--- 1 root vboxsf 4096 Nov 16 22:12 ..
+-rwxrwx--- 1 root vboxsf 2353 Nov 16  2026 audit.log
+drwxrwx--- 1 root vboxsf 4096 Nov 16  2026 raw
+-rwxrwx--- 1 root vboxsf 3003 Nov 16  2026 report.md
+-rwxrwx--- 1 root vboxsf 2575 Nov 16  2026 results.json
+
+sample_output/raw:
+total 17
+drwxrwx--- 1 root vboxsf 4096 Nov 16  2026 .
+drwxrwx--- 1 root vboxsf    0 Nov 16  2026 ..
+-rwxrwx--- 1 root vboxsf  149 Nov 16  2026 curl_headers_444.txt
+-rwxrwx--- 1 root vboxsf  245 Nov 16  2026 curl_headers_80.txt
+-rwxrwx--- 1 root vboxsf    0 Nov 16  2026 dig_reverse.txt
+-rwxrwx--- 1 root vboxsf  668 Nov 16  2026 nmap_stdout.txt
+-rwxrwx--- 1 root vboxsf 2913 Nov 16  2026 nmap.xml
+-rwxrwx--- 1 root vboxsf 2736 Nov 16  2026 whois.txt
+===== Parte 4 - audit.log del modo IP (cada accion: comando, resultado y marca de tiempo) =====
+kali@kali:~/lab15$ cut -c1-236 sample_output/audit.log
+2026-11-16T22:12:40.444-05:00 START  recon.py target=10.0.2.15 mode=ip output=sample_output argv=10.0.2.15 --verbose --output sample_output
+2026-11-16T22:12:40.449-05:00 STAGE  nmap start
+2026-11-16T22:12:40.460-05:00 RUN    nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15
+2026-11-16T22:12:50.644-05:00 OK     nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15 -> exit 0 in 10.18s, 668 bytes of output
+2026-11-16T22:12:50.663-05:00 WRITE  raw/nmap_stdout.txt (668 bytes)
+2026-11-16T22:12:50.674-05:00 READ   raw/nmap.xml (2913 bytes, parsed with xml.etree.ElementTree)
+2026-11-16T22:12:50.686-05:00 STAGE  nmap end status=ok
+2026-11-16T22:12:50.692-05:00 STAGE  dig start
+2026-11-16T22:12:50.698-05:00 RUN    dig +short +time=5 +tries=2 -x 10.0.2.15
+2026-11-16T22:12:51.202-05:00 OK     dig +short +time=5 +tries=2 -x 10.0.2.15 -> exit 0 in 0.48s, 0 bytes of output
+2026-11-16T22:12:51.354-05:00 WRITE  raw/dig_reverse.txt (0 bytes)
+2026-11-16T22:12:51.365-05:00 STAGE  dig end status=ok
+2026-11-16T22:12:51.372-05:00 STAGE  whois start
+2026-11-16T22:12:51.379-05:00 RUN    whois 10.0.2.15
+2026-11-16T22:12:52.022-05:00 OK     whois 10.0.2.15 -> exit 0 in 0.63s, 2736 bytes of output
+2026-11-16T22:12:52.048-05:00 WRITE  raw/whois.txt (2736 bytes)
+2026-11-16T22:12:52.059-05:00 STAGE  whois end status=ok
+2026-11-16T22:12:52.069-05:00 STAGE  curl start
+2026-11-16T22:12:52.079-05:00 RUN    curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:80/
+2026-11-16T22:12:52.108-05:00 OK     curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:80/ -> exit 0 in 0.02s, 245 bytes of output
+2026-11-16T22:12:52.127-05:00 WRITE  raw/curl_headers_80.txt (245 bytes)
+2026-11-16T22:12:52.133-05:00 RUN    curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:444/
+2026-11-16T22:12:52.162-05:00 OK     curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15:444/ -> exit 0 in 0.02s, 149 bytes of output
+2026-11-16T22:12:52.178-05:00 WRITE  raw/curl_headers_444.txt (149 bytes)
+2026-11-16T22:12:52.183-05:00 STAGE  curl end status=ok
+2026-11-16T22:12:52.199-05:00 WRITE  results.json (2575 bytes)
+2026-11-16T22:12:52.211-05:00 READ   results.json (to generate report.md)
+2026-11-16T22:12:52.227-05:00 WRITE  report.md (3003 bytes)
+2026-11-16T22:12:52.232-05:00 END    exit=0 failed_stages=none
+===== Parte 4 - results.json del modo IP (un solo dict, una llave por herramienta) =====
+kali@kali:~/lab15$ python3 -c "import json; d=json.load(open(\"sample_output/results.json\")); print(\"top-level keys:\", list(d)); print(json.dumps(d[\"meta\"])); print(json.dumps(d[\"nmap\"], indent=1)); print(json.dumps(d[\"dig\"])); print(json.dumps(d[\"whois\"], indent=1))" | cut -c1-236
+top-level keys: ['meta', 'nmap', 'dig', 'whois', 'curl']
+{"tool": "recon.py", "target": "10.0.2.15", "mode": "ip", "started": "2026-11-16T22:12:40-05:00", "finished": "2026-11-16T22:12:52-05:00", "stage_status": {"whois": "ok", "dig": "ok", "curl": "ok", "nmap": "ok"}}
+{
+ "command": "nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15",
+ "scope_of_scan": "100 most common TCP ports (--top-ports 100); other ports were NOT probed",
+ "host_up": true,
+ "ip": "10.0.2.15",
+ "hostname": null,
+ "open_ports": [
+  {
+   "port": 22,
+   "protocol": "tcp",
+   "service": "ssh",
+   "version": "OpenSSH 10.3p1 Debian 4"
+  },
+  {
+   "port": 80,
+   "protocol": "tcp",
+   "service": "http",
+   "version": "Apache httpd 2.4.68"
+  },
+  {
+   "port": 444,
+   "protocol": "tcp",
+   "service": "http",
+   "version": "SimpleHTTPServer 0.6"
+  }
+ ],
+ "status": "ok"
+}
+{"query": "-x 10.0.2.15", "records": {"PTR": []}, "status": "ok"}
+{
+ "query": "10.0.2.15",
+ "organization": "Internet Assigned Numbers Authority",
+ "country": "US",
+ "network_name": "PRIVATE-ADDRESS-ABLK-RFC1918-IANA-RESERVED",
+ "network_range": "10.0.0.0 - 10.255.255.255",
+ "note": "private (RFC 1918) address: whois describes the reserved block, not the organization that operates this host",
+ "fields_not_found": [],
+ "status": "ok"
+}
+===== Parte 4 - results.json del modo IP (llave curl: cabeceras de cada servicio HTTP que encontro nmap) =====
+kali@kali:~/lab15$ python3 -c "import json; d=json.load(open(\"sample_output/results.json\")); print(json.dumps(d[\"curl\"], indent=1))" | cut -c1-236
+{
+ "responses": [
+  {
+   "url": "http://10.0.2.15:80/",
+   "status_line": "HTTP/1.1 200 OK",
+   "headers": {
+    "server": "Apache/2.4.68 (Debian)",
+    "x-powered-by": null,
+    "content-security-policy": null,
+    "strict-transport-security": null,
+    "x-frame-options": null
+   },
+   "missing_security_headers": [
+    "Content-Security-Policy (CSP)",
+    "Strict-Transport-Security (HSTS)",
+    "X-Frame-Options"
+   ]
+  },
+  {
+   "url": "http://10.0.2.15:444/",
+   "status_line": "HTTP/1.0 200 OK",
+   "headers": {
+    "server": "SimpleHTTP/0.6 Python/3.14.7",
+    "x-powered-by": null,
+    "content-security-policy": null,
+    "strict-transport-security": null,
+    "x-frame-options": null
+   },
+   "missing_security_headers": [
+    "Content-Security-Policy (CSP)",
+    "Strict-Transport-Security (HSTS)",
+    "X-Frame-Options"
+   ]
+  }
+ ],
+ "status": "ok"
+}
+===== Parte 4 - report.md del modo IP (generado desde results.json): resumen, puertos abiertos, DNS inverso =====
+kali@kali:~/lab15$ sed -n "1,/^## HTTP response/p" sample_output/report.md | cut -c1-236
+# Reconnaissance report: 10.0.2.15
+
+- Mode: **ip**
+- Started: 2026-11-16T22:12:40-05:00
+- Finished: 2026-11-16T22:12:52-05:00
+- Tool: recon.py (commands and outcomes are recorded in `audit.log`)
+
+## Summary of findings
+
+| Finding | Value |
+|---|---|
+| Target | `10.0.2.15` |
+| Mode | ip |
+| Open ports (top 100 TCP) | 22/ssh, 80/http, 444/http |
+| Reverse DNS (PTR) | no PTR record |
+| Owner organization | Internet Assigned Numbers Authority |
+| Country | US |
+| Web server at http://10.0.2.15:80/ | HTTP/1.1 200 OK; Server: Apache/2.4.68 (Debian); X-Powered-By: — |
+| Missing security headers at http://10.0.2.15:80/ | Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options |
+| Web server at http://10.0.2.15:444/ | HTTP/1.0 200 OK; Server: SimpleHTTP/0.6 Python/3.14.7; X-Powered-By: — |
+| Missing security headers at http://10.0.2.15:444/ | Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options |
+| Stages with errors | none |
+
+## Open ports
+
+Command: `nmap -sV --open --top-ports 100 -oX sample_output/raw/nmap.xml 10.0.2.15`
+
+Scope: 100 most common TCP ports (--top-ports 100); other ports were NOT probed. A port that is not listed was either closed or **not probed**; it is not proven closed.
+
+| Port | Protocol | Service | Version |
+|---:|---|---|---|
+| 22 | tcp | ssh | OpenSSH 10.3p1 Debian 4 |
+| 80 | tcp | http | Apache httpd 2.4.68 |
+| 444 | tcp | http | SimpleHTTPServer 0.6 |
+
+## Reverse DNS and ownership
+
+- PTR: no PTR record
+- Organization: Internet Assigned Numbers Authority
+- Country: US
+- Network: PRIVATE-ADDRESS-ABLK-RFC1918-IANA-RESERVED (10.0.0.0 - 10.255.255.255)
+- Note: private (RFC 1918) address: whois describes the reserved block, not the organization that operates this host
+
+## HTTP response headers and missing security headers
+===== Parte 4 - report.md del modo IP: cabeceras HTTP y cabeceras de seguridad ausentes =====
+kali@kali:~/lab15$ sed -n "/^## HTTP response/,\$p" sample_output/report.md | cut -c1-236
+## HTTP response headers and missing security headers
+
+### http://10.0.2.15:80/ — `HTTP/1.1 200 OK`
+
+| Header | Value |
+|---|---|
+| Server | Apache/2.4.68 (Debian) |
+| X-Powered-By | — |
+| Content-Security-Policy | — |
+| Strict-Transport-Security | — |
+| X-Frame-Options | — |
+
+**Missing security headers:** Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options.
+(HSTS is only honoured over HTTPS; this service is plain HTTP, which is itself a finding.)
+The `Server` / `X-Powered-By` headers disclose software and version information.
+
+### http://10.0.2.15:444/ — `HTTP/1.0 200 OK`
+
+| Header | Value |
+|---|---|
+| Server | SimpleHTTP/0.6 Python/3.14.7 |
+| X-Powered-By | — |
+| Content-Security-Policy | — |
+| Strict-Transport-Security | — |
+| X-Frame-Options | — |
+
+**Missing security headers:** Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options.
+(HSTS is only honoured over HTTPS; this service is plain HTTP, which is itself a finding.)
+The `Server` / `X-Powered-By` headers disclose software and version information.
+
+
+## Stage status
+
+| Tool | Status | Error |
+|---|---|---|
+| whois | ok | — |
+| dig | ok | — |
+| curl | ok | — |
+| nmap | ok | — |
+===== Parte 4 - Modo dominio (whois + dig A/MX/NS/TXT + curl -I); no se ejecuta nmap contra dominios =====
+kali@kali:~/lab15$ python3 recon.py example.com --verbose --output sample_output/domain_mode; echo "exit code: $?"
+[recon] target=example.com mode=domain output=sample_output/domain_mode/
+[recon] stage whois ...
+[recon] $ whois example.com
+[recon] stage dig ...
+[recon] $ dig +short +time=5 +tries=2 example.com A
+[recon] $ dig +short +time=5 +tries=2 example.com MX
+[recon] $ dig +short +time=5 +tries=2 example.com NS
+[recon] $ dig +short +time=5 +tries=2 example.com TXT
+[recon] stage curl ...
+[recon] $ curl -sS -I -L --max-redirs 3 --max-time 15 https://example.com/
+[recon] done: sample_output/domain_mode/results.json, sample_output/domain_mode/report.md, sample_output/domain_mode/audit.log
+sample_output/domain_mode/
+exit code: 0
+kali@kali:~/lab15$ cut -c1-236 sample_output/domain_mode/audit.log
+2026-11-16T22:13:08.391-05:00 START  recon.py target=example.com mode=domain output=sample_output/domain_mode argv=example.com --verbose --output sample_output/domain_mode
+2026-11-16T22:13:08.399-05:00 STAGE  whois start
+2026-11-16T22:13:08.408-05:00 RUN    whois example.com
+2026-11-16T22:13:09.739-05:00 OK     whois example.com -> exit 0 in 1.31s, 3502 bytes of output
+2026-11-16T22:13:09.795-05:00 WRITE  raw/whois.txt (3502 bytes)
+2026-11-16T22:13:09.812-05:00 STAGE  whois end status=ok
+2026-11-16T22:13:09.826-05:00 STAGE  dig start
+2026-11-16T22:13:09.834-05:00 RUN    dig +short +time=5 +tries=2 example.com A
+2026-11-16T22:13:10.087-05:00 OK     dig +short +time=5 +tries=2 example.com A -> exit 0 in 0.23s, 29 bytes of output
+2026-11-16T22:13:10.144-05:00 WRITE  raw/dig_A.txt (29 bytes)
+2026-11-16T22:13:10.154-05:00 RUN    dig +short +time=5 +tries=2 example.com MX
+2026-11-16T22:13:10.278-05:00 OK     dig +short +time=5 +tries=2 example.com MX -> exit 0 in 0.12s, 4 bytes of output
+2026-11-16T22:13:10.298-05:00 WRITE  raw/dig_MX.txt (4 bytes)
+2026-11-16T22:13:10.308-05:00 RUN    dig +short +time=5 +tries=2 example.com NS
+2026-11-16T22:13:10.423-05:00 OK     dig +short +time=5 +tries=2 example.com NS -> exit 0 in 0.11s, 51 bytes of output
+2026-11-16T22:13:10.444-05:00 WRITE  raw/dig_NS.txt (51 bytes)
+2026-11-16T22:13:10.452-05:00 RUN    dig +short +time=5 +tries=2 example.com TXT
+2026-11-16T22:13:10.673-05:00 OK     dig +short +time=5 +tries=2 example.com TXT -> exit 0 in 0.10s, 49 bytes of output
+2026-11-16T22:13:10.824-05:00 WRITE  raw/dig_TXT.txt (49 bytes)
+2026-11-16T22:13:10.864-05:00 STAGE  dig end status=ok
+2026-11-16T22:13:10.884-05:00 STAGE  curl start
+2026-11-16T22:13:10.906-05:00 RUN    curl -sS -I -L --max-redirs 3 --max-time 15 https://example.com/
+2026-11-16T22:13:11.371-05:00 OK     curl -sS -I -L --max-redirs 3 --max-time 15 https://example.com/ -> exit 0 in 0.44s, 276 bytes of output
+2026-11-16T22:13:11.406-05:00 WRITE  raw/curl_headers.txt (276 bytes)
+2026-11-16T22:13:11.414-05:00 STAGE  curl end status=ok
+2026-11-16T22:13:11.423-05:00 STAGE  nmap skipped (domain mode)
+2026-11-16T22:13:11.444-05:00 WRITE  results.json (1629 bytes)
+2026-11-16T22:13:11.459-05:00 READ   results.json (to generate report.md)
+2026-11-16T22:13:11.481-05:00 WRITE  report.md (2060 bytes)
+2026-11-16T22:13:11.489-05:00 END    exit=0 failed_stages=none
+===== Parte 4 - results.json del modo dominio (1/2) =====
+kali@kali:~/lab15$ sed -n "1,46p" sample_output/domain_mode/results.json | cut -c1-236
+{
+  "meta": {
+    "tool": "recon.py",
+    "target": "example.com",
+    "mode": "domain",
+    "started": "2026-11-16T22:13:08-05:00",
+    "finished": "2026-11-16T22:13:11-05:00",
+    "stage_status": {
+      "whois": "ok",
+      "dig": "ok",
+      "curl": "ok",
+      "nmap": "skipped"
+    }
+  },
+  "whois": {
+    "query": "example.com",
+    "registrar": "RESERVED-Internet Assigned Numbers Authority",
+    "registration_date": "1995-08-14T04:00:00Z",
+    "expiry_date": "2027-08-13T04:00:00Z",
+    "registrant_organization": "Internet Assigned Numbers Authority",
+    "fields_not_found": [],
+    "status": "ok"
+  },
+  "dig": {
+    "query": "example.com",
+    "records": {
+      "A": [
+        "104.20.23.154",
+        "172.66.147.243"
+      ],
+      "MX": [
+        "0 ."
+      ],
+      "NS": [
+        "elliott.ns.cloudflare.com.",
+        "hera.ns.cloudflare.com."
+      ],
+      "TXT": [
+        "\"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9\"",
+        "\"v=spf1 -all\""
+      ]
+    },
+    "status": "ok"
+  },
+  "curl": {
+    "responses": [
+===== Parte 4 - results.json del modo dominio (2/2) =====
+kali@kali:~/lab15$ sed -n "47,\$p" sample_output/domain_mode/results.json | cut -c1-236
+      {
+        "url": "https://example.com/",
+        "status_line": "HTTP/2 200",
+        "headers": {
+          "server": "cloudflare",
+          "x-powered-by": null,
+          "content-security-policy": null,
+          "strict-transport-security": null,
+          "x-frame-options": null
+        },
+        "missing_security_headers": [
+          "Content-Security-Policy (CSP)",
+          "Strict-Transport-Security (HSTS)",
+          "X-Frame-Options"
+        ]
+      }
+    ],
+    "status": "ok"
+  },
+  "nmap": {
+    "status": "skipped",
+    "reason": "nmap is only run in IP mode"
+  }
+}
+===== Parte 4 - report.md del modo dominio: resumen y registro (whois) =====
+kali@kali:~/lab15$ sed -n "1,/^## DNS records/p" sample_output/domain_mode/report.md | cut -c1-236
+# Reconnaissance report: example.com
+
+- Mode: **domain**
+- Started: 2026-11-16T22:13:08-05:00
+- Finished: 2026-11-16T22:13:11-05:00
+- Tool: recon.py (commands and outcomes are recorded in `audit.log`)
+
+## Summary of findings
+
+| Finding | Value |
+|---|---|
+| Target | `example.com` |
+| Mode | domain |
+| Registrar | RESERVED-Internet Assigned Numbers Authority |
+| Registered on | 1995-08-14T04:00:00Z |
+| Expires on | 2027-08-13T04:00:00Z |
+| Registrant organization | Internet Assigned Numbers Authority |
+| A records | 104.20.23.154, 172.66.147.243 |
+| Name servers | elliott.ns.cloudflare.com., hera.ns.cloudflare.com. |
+| Mail servers | 0 . |
+| TXT records | 2 |
+| Web server at https://example.com/ | HTTP/2 200; Server: cloudflare; X-Powered-By: — |
+| Missing security headers at https://example.com/ | Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options |
+| Stages with errors | none |
+
+## Registration (whois)
+
+| Field | Value |
+|---|---|
+| Registrar | RESERVED-Internet Assigned Numbers Authority |
+| Registration date | 1995-08-14T04:00:00Z |
+| Expiry date | 2027-08-13T04:00:00Z |
+| Registrant organization | Internet Assigned Numbers Authority |
+
+## DNS records
+===== Parte 4 - report.md del modo dominio: registros DNS y cabeceras de seguridad ausentes =====
+kali@kali:~/lab15$ sed -n "/^## DNS records/,\$p" sample_output/domain_mode/report.md | cut -c1-236
+## DNS records
+
+| Type | Records |
+|---|---|
+| A | `104.20.23.154`<br>`172.66.147.243` |
+| MX | `0 .` |
+| NS | `elliott.ns.cloudflare.com.`<br>`hera.ns.cloudflare.com.` |
+| TXT | `"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9"`<br>`"v=spf1 -all"` |
+
+## HTTP response headers and missing security headers
+
+### https://example.com/ — `HTTP/2 200`
+
+| Header | Value |
+|---|---|
+| Server | cloudflare |
+| X-Powered-By | — |
+| Content-Security-Policy | — |
+| Strict-Transport-Security | — |
+| X-Frame-Options | — |
+
+**Missing security headers:** Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options.
+The `Server` / `X-Powered-By` headers disclose software and version information.
+
+
+## Stage status
+
+| Tool | Status | Error |
+|---|---|---|
+| whois | ok | — |
+| dig | ok | — |
+| curl | ok | — |
+| nmap | skipped | nmap is only run in IP mode |
+===== Parte 4 - cada etapa falla de forma independiente (dominio inexistente: whois y curl fallan, dig sigue) =====
+kali@kali:~/lab15$ python3 recon.py dominio-que-no-existe.invalid --verbose --output /tmp/recon_fail 2>&1 | grep -vE "^\[recon\] \\$"; echo "exit code: ${PIPESTATUS[0]}"
+[recon] target=dominio-que-no-existe.invalid mode=domain output=/tmp/recon_fail/
+[recon] stage whois ...
+[recon] stage whois FAILED: whois exited with status 1: No whois server is known for this kind of object.
+[recon] stage dig ...
+[recon] stage curl ...
+[recon] stage curl FAILED: no HTTP(S) response from dominio-que-no-existe.invalid: curl exited with status 6: curl: (6) Could not resolve host: dominio-que-no-existe.invalid
+[recon] done: /tmp/recon_fail/results.json, /tmp/recon_fail/report.md, /tmp/recon_fail/audit.log
+[recon] WARNING: stages with errors: whois, curl (results are incomplete)
+/tmp/recon_fail/
+exit code: 1
+kali@kali:~/lab15$ grep -E " (STAGE|ERROR|END) " /tmp/recon_fail/audit.log | cut -c1-200
+2026-11-16T22:13:23.908-05:00 STAGE  whois start
+2026-11-16T22:13:23.912-05:00 ERROR  whois dominio-que-no-existe.invalid -> exit 1 in 0.00s: No whois server is known for this kind of object.
+2026-11-16T22:13:23.913-05:00 STAGE  whois end status=error error=CommandError: whois exited with status 1: No whois server is known for this kind of object.
+2026-11-16T22:13:23.913-05:00 STAGE  dig start
+2026-11-16T22:13:24.131-05:00 STAGE  dig end status=ok
+2026-11-16T22:13:24.131-05:00 STAGE  curl start
+2026-11-16T22:13:24.178-05:00 ERROR  curl -sS -I -L --max-redirs 3 --max-time 15 https://dominio-que-no-existe.invalid/ -> exit 6 in 0.05s: curl: (6) Could not resolve host: dominio-que-no-existe.inva
+2026-11-16T22:13:24.233-05:00 ERROR  curl -sS -I -L --max-redirs 3 --max-time 15 http://dominio-que-no-existe.invalid/ -> exit 6 in 0.05s: curl: (6) Could not resolve host: dominio-que-no-existe.inval
+2026-11-16T22:13:24.234-05:00 STAGE  curl end status=error error=CommandError: no HTTP(S) response from dominio-que-no-existe.invalid: curl exited with status 6: curl: (6) Could not resolve host: domi
+2026-11-16T22:13:24.234-05:00 STAGE  nmap skipped (domain mode)
+2026-11-16T22:13:24.235-05:00 END    exit=1 failed_stages=['whois', 'curl']
+kali@kali:~/lab15$ sed -n "/^## Stage status/,\$p" /tmp/recon_fail/report.md | cut -c1-200
+## Stage status
+
+| Tool | Status | Error |
+|---|---|---|
+| whois | error | CommandError: whois exited with status 1: No whois server is known for this kind of object. |
+| dig | ok | — |
+| curl | error | CommandError: no HTTP(S) response from dominio-que-no-existe.invalid: curl exited with status 6: curl: (6) Could not resolve host: dominio-que-no-existe.invalid |
+| nmap | skipped | nmap is only run in IP mode |
+===== Herramienta ausente (PATH sin nmap): la etapa nmap falla, dig y whois continuan =====
+kali@kali:~/lab15$ mkdir -p /tmp/nonmap && for t in python3 dig whois curl; do ln -sf "$(command -v $t)" /tmp/nonmap/$t; done; PATH=/tmp/nonmap python3 recon.py 10.0.2.15 --output /tmp/recon_nonmap; echo "exit code: $?"
+[recon] stage nmap FAILED: nmap: command not found
+[recon] WARNING: stages with errors: nmap (results are incomplete)
+/tmp/recon_nonmap/
+exit code: 1
+kali@kali:~/lab15$ grep -E " (STAGE|ERROR|END) " /tmp/recon_nonmap/audit.log | cut -c1-200
+2026-11-16T22:13:24.617-05:00 STAGE  nmap start
+2026-11-16T22:13:24.620-05:00 ERROR  nmap -sV --open --top-ports 100 -oX /tmp/recon_nonmap/raw/nmap.xml 10.0.2.15 -> command not found
+2026-11-16T22:13:24.621-05:00 STAGE  nmap end status=error error=CommandError: nmap: command not found
+2026-11-16T22:13:24.621-05:00 STAGE  dig start
+2026-11-16T22:13:24.688-05:00 STAGE  dig end status=ok
+2026-11-16T22:13:24.688-05:00 STAGE  whois start
+2026-11-16T22:13:25.179-05:00 STAGE  whois end status=ok
+2026-11-16T22:13:25.179-05:00 STAGE  curl start
+2026-11-16T22:13:25.183-05:00 STAGE  curl end status=skipped
+2026-11-16T22:13:25.185-05:00 END    exit=1 failed_stages=['nmap']
+===== Handoff 6 - el analista reconstruye report.md SOLO desde el results.json que envia el ingeniero =====
+kali@kali:~/lab15$ python3 recon.py 10.0.2.15 --from-results sample_output/results.json --output /tmp/recon_from_results --verbose; echo "exit code: $?"
+[recon] target=10.0.2.15 mode=ip output=/tmp/recon_from_results/
+[recon] done: /tmp/recon_from_results/results.json, /tmp/recon_from_results/report.md, /tmp/recon_from_results/audit.log
+/tmp/recon_from_results/
+exit code: 0
+kali@kali:~/lab15$ cut -c1-200 /tmp/recon_from_results/audit.log
+2026-11-16T22:13:28.247-05:00 START  recon.py target=10.0.2.15 mode=ip output=/tmp/recon_from_results argv=10.0.2.15 --from-results sample_output/results.json --output /tmp/recon_from_results --verbos
+2026-11-16T22:13:28.248-05:00 READ   sample_output/results.json (--from-results: no stage is run)
+2026-11-16T22:13:28.259-05:00 WRITE  results.json (2575 bytes)
+2026-11-16T22:13:28.259-05:00 READ   results.json (to generate report.md)
+2026-11-16T22:13:28.260-05:00 WRITE  report.md (3003 bytes)
+2026-11-16T22:13:28.260-05:00 END    exit=0 failed_stages=none
+kali@kali:~/lab15$ diff sample_output/report.md /tmp/recon_from_results/report.md && echo "report.md identico al de la corrida original"
+report.md identico al de la corrida original
+===== Juntos - el ingeniero verifica audit.log contra los comandos que REALMENTE se ejecutaron (ambos modos) =====
+kali@kali:~/lab15$ python3 part4/verify_audit.py 10.0.2.15 | tee part4/audit_verification_ip.txt
+1. Static check: where does recon.py spawn processes?
+     recon.py:82: proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)   (inside run_logged: True)
+   -> PASS: 1 spawn site(s); run_logged() spans lines 70-97
+
+2. Dynamic check: running /media/sf_Gutierrez-Ducuara_Lab3/Lab15/recon.py 10.0.2.15 --output /tmp/recon_audit_check_7omdq1l4/out with witness shims for whois, dig, curl, nmap
+     recon.py exit code: 0
+
+      #  really executed (witness)                                      logged in audit.log
+      1  nmap -sV --open --top-ports 100 -oX /tmp/recon_audit_check_7   yes
+      2  dig +short +time=5 +tries=2 -x 10.0.2.15                       yes
+      3  whois 10.0.2.15                                                yes
+      4  curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15   yes
+      5  curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15   yes
+
+     commands really executed: 5 | RUN lines in audit.log: 5 | outcome lines (OK/ERROR): 5
+   -> PASS: every executed command is in audit.log, every audit entry corresponds to a command that ran, and each has an outcome
+     (work dir: /tmp/recon_audit_check_7omdq1l4)
+
+AUDIT VERIFICATION: PASS
+kali@kali:~/lab15$ python3 part4/verify_audit.py example.com | tee part4/audit_verification_domain.txt
+1. Static check: where does recon.py spawn processes?
+     recon.py:82: proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)   (inside run_logged: True)
+   -> PASS: 1 spawn site(s); run_logged() spans lines 70-97
+
+2. Dynamic check: running /media/sf_Gutierrez-Ducuara_Lab3/Lab15/recon.py example.com --output /tmp/recon_audit_check_lvyt6oly/out with witness shims for whois, dig, curl, nmap
+     recon.py exit code: 0
+
+      #  really executed (witness)                                      logged in audit.log
+      1  whois example.com                                              yes
+      2  dig +short +time=5 +tries=2 example.com A                      yes
+      3  dig +short +time=5 +tries=2 example.com MX                     yes
+      4  dig +short +time=5 +tries=2 example.com NS                     yes
+      5  dig +short +time=5 +tries=2 example.com TXT                    yes
+      6  curl -sS -I -L --max-redirs 3 --max-time 15 https://example.   yes
+
+     commands really executed: 6 | RUN lines in audit.log: 6 | outcome lines (OK/ERROR): 6
+   -> PASS: every executed command is in audit.log, every audit entry corresponds to a command that ran, and each has an outcome
+     (work dir: /tmp/recon_audit_check_lvyt6oly)
+
+AUDIT VERIFICATION: PASS
+===== Lo que registro el sshd del OBJETIVO (journal real de Kali) durante los escaneos y ssh-keyscan =====
+kali@kali:~/lab15$ journalctl -u ssh --since "2026-11-16 21:40" --no-pager -o short > part2/target_sshd_journal.log; wc -l part2/target_sshd_journal.log
+165 part2/target_sshd_journal.log
+kali@kali:~/lab15$ grep -c "Connection closed by\|Connection reset by" part2/target_sshd_journal.log; grep -c "Unable to negotiate" part2/target_sshd_journal.log
+147
+5
+kali@kali:~/lab15$ grep -E "Connection (closed|reset) by" part2/target_sshd_journal.log | awk "{print \$(NF-3)}" | sort | uniq -c
+     99 10.0.2.15
+     48 reset
+kali@kali:~/lab15$ tail -12 part2/target_sshd_journal.log | cut -c1-190
+Nov 16 22:09:07 kali sshd-session[29699]: Connection closed by 10.0.2.15 port 43138 [preauth]
+Nov 16 22:09:07 kali sshd-session[29700]: Connection closed by 10.0.2.15 port 43152 [preauth]
+Nov 16 22:09:07 kali sshd-session[29701]: Unable to negotiate with 10.0.2.15 port 43166: no matching host key type found. Their offer: sk-ecdsa-sha2-nistp256@openssh.com [preauth]
+Nov 16 22:09:07 kali sshd-session[29702]: Unable to negotiate with 10.0.2.15 port 43178: no matching host key type found. Their offer: sk-ssh-ed25519@openssh.com [preauth]
+Nov 16 22:09:07 kali sshd-session[29719]: Connection closed by 10.0.2.15 port 43188 [preauth]
+Nov 16 22:09:07 kali sshd-session[29720]: Connection closed by 10.0.2.15 port 43194 [preauth]
+Nov 16 22:09:07 kali sshd-session[29721]: Connection closed by 10.0.2.15 port 43200 [preauth]
+Nov 16 22:09:07 kali sshd-session[29722]: Unable to negotiate with 10.0.2.15 port 43210: no matching host key type found. Their offer: sk-ecdsa-sha2-nistp256@openssh.com [preauth]
+Nov 16 22:09:30 kali sshd-session[30003]: Connection closed by 10.0.2.15 port 44940 [preauth]
+Nov 16 22:10:22 kali sshd-session[30655]: Connection closed by 10.0.2.15 port 60510 [preauth]
+Nov 16 22:12:44 kali sshd-session[32422]: Connection closed by 10.0.2.15 port 34194 [preauth]
+Nov 16 22:13:39 kali sshd-session[33094]: Connection closed by 10.0.2.15 port 37176 [preauth]
+===== auth_analysis.py sobre ese log real (entrada extra): no hay Failed password, solo conexiones de escaneo =====
+kali@kali:~/lab15$ python3 auth_analysis.py part2/target_sshd_journal.log | head -22
+## 1. SSH brute-force sources (auth.log)
+
+IPs with more than 10 failed logins, sorted by attempts:
+
+| IP | Failed attempts | Distinct user names | Attack style |
+|---|---:|---:|---|
+| (none) | | | |
+
+## 2. Targeted user accounts
+
+| User | Failed attempts | Account exists? |
+|---|---:|---|
+
+Failed logins for nonexistent accounts (`invalid user` lines): **0**
+
+## 3. Failed vs successful logins
+
+- Failed: **0**
+- Successful: **0**
+- Ratio failed:successful = **None:1**
+
+## 4. Successful logins after failures (possible compromise)
