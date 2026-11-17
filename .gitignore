@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+# ad-hoc recon.py runs (the committed sample is sample_output/)
+recon_*/

@@ -1,0 +1,9 @@
+SCOPE OF AUTHORIZED SCANNING - Lab 15 (Automation)
+
+Authorized target : 10.0.2.15   (the analyst's own Kali Linux VM, interface eth0)
+Date              : 2026-11-16
+Window: 2026-11-16T21:30 to 2026-11-17T01:30   (local time of the VM, UTC-05:00)
+
+Only this address may be scanned.
+
+Anything else (other hosts, other networks, any time outside the window) is out of scope.

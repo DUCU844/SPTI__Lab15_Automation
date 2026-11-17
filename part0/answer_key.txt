@@ -1,0 +1,8 @@
+ANSWER KEY (analyst's private note - not shown to the engineer before Handoff 3)
+Open TCP ports on 10.0.2.15 in the range 1-1024, taken from `ss -ltnp`:
+
+   22   sshd            started for the lab with `sudo systemctl start ssh`
+   80   apache2         was already running on this Kali VM before the lab
+  311   python3 -m http.server 311   (listener 1, empty directory)
+  444   python3 -m http.server 444   (listener 2, empty directory)
+  808   python3 -m http.server 808   (listener 3, empty directory)
