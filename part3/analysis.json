@@ -1,0 +1,405 @@
+{
+  "auth": {
+    "threshold": 10,
+    "failed_total": 347,
+    "successful_total": 21,
+    "failed_to_successful_ratio": 16.52,
+    "bruteforce_ips": [
+      {
+        "ip": "203.0.113.77",
+        "failures": 240,
+        "distinct_users": 10,
+        "style": "wordlist (10 user names)"
+      },
+      {
+        "ip": "198.51.100.23",
+        "failures": 85,
+        "distinct_users": 1,
+        "style": "targeted (only `root`)"
+      },
+      {
+        "ip": "192.168.1.50",
+        "failures": 12,
+        "distinct_users": 1,
+        "style": "targeted (only `daniel`)"
+      }
+    ],
+    "targeted_users": [
+      {
+        "user": "root",
+        "failures": 115,
+        "invalid": false
+      },
+      {
+        "user": "daniel",
+        "failures": 45,
+        "invalid": false
+      },
+      {
+        "user": "guest",
+        "failures": 30,
+        "invalid": true
+      },
+      {
+        "user": "test",
+        "failures": 27,
+        "invalid": true
+      },
+      {
+        "user": "ubuntu",
+        "failures": 26,
+        "invalid": false
+      },
+      {
+        "user": "web master",
+        "failures": 25,
+        "invalid": true
+      },
+      {
+        "user": "postgres",
+        "failures": 25,
+        "invalid": true
+      },
+      {
+        "user": "admin",
+        "failures": 24,
+        "invalid": false
+      },
+      {
+        "user": "oracle",
+        "failures": 17,
+        "invalid": true
+      },
+      {
+        "user": "backup admin",
+        "failures": 13,
+        "invalid": true
+      }
+    ],
+    "invalid_user_failures": 137,
+    "success_after_failures": [
+      {
+        "ip": "203.0.113.77",
+        "user": "admin",
+        "method": "password",
+        "prior_failures": 240
+      }
+    ],
+    "unparsed_failed_lines": 0
+  },
+  "web": {
+    "total_lines": 3415,
+    "unparsed_lines": 0,
+    "days": [
+      "16/Nov/2026"
+    ],
+    "top_ips": [
+      [
+        "10.0.0.1",
+        1241
+      ],
+      [
+        "203.0.113.77",
+        967
+      ],
+      [
+        "198.51.100.23",
+        578
+      ],
+      [
+        "66.249.66.1",
+        471
+      ],
+      [
+        "192.168.1.50",
+        158
+      ]
+    ],
+    "status_distribution": {
+      "200": 3182,
+      "403": 105,
+      "500": 128
+    },
+    "suspicious_paths": [
+      {
+        "path": "/search?q=trade%20union%20select%20committee",
+        "decoded": "/search?q=trade union select committee",
+        "families": [
+          "sql_injection"
+        ],
+        "count": 67,
+        "ips": {
+          "10.0.0.1": 23,
+          "203.0.113.77": 18,
+          "66.249.66.1": 15,
+          "198.51.100.23": 9,
+          "192.168.1.50": 2
+        },
+        "statuses": {
+          "200": 67
+        }
+      },
+      {
+        "path": "/ping?host=127.0.0.1%3Bcat%20%2Fetc%2Fpasswd",
+        "decoded": "/ping?host=127.0.0.1;cat /etc/passwd",
+        "families": [
+          "path_traversal",
+          "command_injection"
+        ],
+        "count": 38,
+        "ips": {
+          "198.51.100.23": 19,
+          "203.0.113.77": 19
+        },
+        "statuses": {
+          "200": 12,
+          "403": 13,
+          "500": 13
+        }
+      },
+      {
+        "path": "/.env",
+        "decoded": "/.env",
+        "families": [
+          "sensitive_path_probe"
+        ],
+        "count": 36,
+        "ips": {
+          "203.0.113.77": 21,
+          "198.51.100.23": 15
+        },
+        "statuses": {
+          "200": 12,
+          "403": 9,
+          "500": 15
+        }
+      },
+      {
+        "path": "/static/%252e%252e%252f%252e%252e%252fetc%252fshadow",
+        "decoded": "/static/../../etc/shadow",
+        "families": [
+          "path_traversal"
+        ],
+        "count": 35,
+        "ips": {
+          "198.51.100.23": 18,
+          "203.0.113.77": 17
+        },
+        "statuses": {
+          "200": 14,
+          "403": 10,
+          "500": 11
+        }
+      },
+      {
+        "path": "/wp-admin/",
+        "decoded": "/wp-admin/",
+        "families": [
+          "sensitive_path_probe"
+        ],
+        "count": 35,
+        "ips": {
+          "203.0.113.77": 20,
+          "198.51.100.23": 15
+        },
+        "statuses": {
+          "200": 11,
+          "403": 16,
+          "500": 8
+        }
+      },
+      {
+        "path": "/item?id=5 UNION SELECT username,password FROM users--",
+        "decoded": "/item?id=5 UNION SELECT username,password FROM users--",
+        "families": [
+          "sql_injection"
+        ],
+        "count": 33,
+        "ips": {
+          "198.51.100.23": 18,
+          "203.0.113.77": 15
+        },
+        "statuses": {
+          "200": 15,
+          "403": 9,
+          "500": 9
+        }
+      },
+      {
+        "path": "/comment?text=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E",
+        "decoded": "/comment?text=<img src=x onerror=alert(1)>",
+        "families": [
+          "xss"
+        ],
+        "count": 31,
+        "ips": {
+          "198.51.100.23": 19,
+          "203.0.113.77": 12
+        },
+        "statuses": {
+          "200": 12,
+          "403": 8,
+          "500": 11
+        }
+      },
+      {
+        "path": "/search?q=%3Cscript%3Ealert(document.cookie)%3C%2Fscript%3E",
+        "decoded": "/search?q=<script>alert(document.cookie)</script>",
+        "families": [
+          "xss"
+        ],
+        "count": 31,
+        "ips": {
+          "198.51.100.23": 19,
+          "203.0.113.77": 12
+        },
+        "statuses": {
+          "200": 11,
+          "403": 8,
+          "500": 12
+        }
+      },
+      {
+        "path": "/cgi-bin/status.cgi?cmd=cat%20%2Fetc%2Fpasswd",
+        "decoded": "/cgi-bin/status.cgi?cmd=cat /etc/passwd",
+        "families": [
+          "path_traversal",
+          "command_injection"
+        ],
+        "count": 30,
+        "ips": {
+          "203.0.113.77": 15,
+          "198.51.100.23": 15
+        },
+        "statuses": {
+          "200": 6,
+          "403": 9,
+          "500": 15
+        }
+      },
+      {
+        "path": "/login?user=admin%27%20OR%20%271%27%3D%271",
+        "decoded": "/login?user=admin' OR '1'='1",
+        "families": [
+          "sql_injection"
+        ],
+        "count": 30,
+        "ips": {
+          "203.0.113.77": 17,
+          "198.51.100.23": 13
+        },
+        "statuses": {
+          "200": 9,
+          "403": 11,
+          "500": 10
+        }
+      },
+      {
+        "path": "/download?file=..%2F..%2F..%2Fetc%2Fpasswd",
+        "decoded": "/download?file=../../../etc/passwd",
+        "families": [
+          "path_traversal"
+        ],
+        "count": 25,
+        "ips": {
+          "198.51.100.23": 15,
+          "203.0.113.77": 10
+        },
+        "statuses": {
+          "200": 7,
+          "403": 6,
+          "500": 12
+        }
+      },
+      {
+        "path": "/?id=1%27%20UNION%20SELECT%201,2,3--",
+        "decoded": "/?id=1' UNION SELECT 1,2,3--",
+        "families": [
+          "sql_injection"
+        ],
+        "count": 22,
+        "ips": {
+          "198.51.100.23": 14,
+          "203.0.113.77": 8
+        },
+        "statuses": {
+          "200": 4,
+          "403": 6,
+          "500": 12
+        }
+      }
+    ],
+    "suspicious_total": 413,
+    "suspicious_by_family": {
+      "sql_injection": 152,
+      "path_traversal": 128,
+      "sensitive_path_probe": 71,
+      "command_injection": 68,
+      "xss": 62
+    },
+    "suspicious_by_ip": {
+      "198.51.100.23": 189,
+      "203.0.113.77": 184,
+      "10.0.0.1": 23,
+      "66.249.66.1": 15,
+      "192.168.1.50": 2
+    },
+    "hourly": {
+      "00": 93,
+      "01": 87,
+      "02": 94,
+      "03": 107,
+      "04": 320,
+      "05": 97,
+      "06": 97,
+      "07": 99,
+      "08": 88,
+      "09": 83,
+      "10": 82,
+      "11": 114,
+      "12": 95,
+      "13": 80,
+      "14": 103,
+      "15": 97,
+      "16": 91,
+      "17": 112,
+      "18": 112,
+      "19": 950,
+      "20": 117,
+      "21": 107,
+      "22": 108,
+      "23": 82
+    },
+    "sigma_threshold": 3.0,
+    "robust_threshold": 3.5,
+    "mean": 142.3,
+    "stdev": 178.3,
+    "median": 97.0,
+    "mad": 10.0,
+    "max_attainable_z": 4.69,
+    "anomalies": [
+      {
+        "hour": "19",
+        "count": 950,
+        "z": 4.53,
+        "method": "3-sigma"
+      }
+    ],
+    "robust_anomalies": [
+      {
+        "hour": "04",
+        "count": 320,
+        "robust_z": 15.0,
+        "z": 1.0,
+        "method": "median/MAD"
+      },
+      {
+        "hour": "19",
+        "count": 950,
+        "robust_z": 57.5,
+        "z": 4.53,
+        "method": "median/MAD"
+      }
+    ]
+  }
+}
