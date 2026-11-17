@@ -1,0 +1,149 @@
+[
+  {
+    "version": "sequential",
+    "concurrency": 1,
+    "runs": 2,
+    "median_seconds": 0.661,
+    "min_seconds": 0.655,
+    "max_seconds": 0.667,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": []
+  },
+  {
+    "version": "threads",
+    "concurrency": 50,
+    "runs": 2,
+    "median_seconds": 2.937,
+    "min_seconds": 2.934,
+    "max_seconds": 2.939,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": [
+      34782,
+      59100
+    ]
+  },
+  {
+    "version": "threads",
+    "concurrency": 200,
+    "runs": 2,
+    "median_seconds": 6.891,
+    "min_seconds": 6.344,
+    "max_seconds": 7.437,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": [
+      49532,
+      53582
+    ]
+  },
+  {
+    "version": "threads",
+    "concurrency": 500,
+    "runs": 2,
+    "median_seconds": 11.385,
+    "min_seconds": 10.738,
+    "max_seconds": 12.032,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": []
+  },
+  {
+    "version": "threads",
+    "concurrency": 2000,
+    "runs": 2,
+    "median_seconds": 10.272,
+    "min_seconds": 10.049,
+    "max_seconds": 10.495,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": [
+      35174,
+      45986,
+      51344,
+      60814
+    ]
+  },
+  {
+    "version": "asyncio",
+    "concurrency": 50,
+    "runs": 2,
+    "median_seconds": 3.818,
+    "min_seconds": 3.623,
+    "max_seconds": 4.012,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": [
+      43158,
+      43868,
+      46774,
+      53872,
+      57552
+    ]
+  },
+  {
+    "version": "asyncio",
+    "concurrency": 200,
+    "runs": 2,
+    "median_seconds": 4.819,
+    "min_seconds": 4.755,
+    "max_seconds": 4.883,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": [
+      40616,
+      50550,
+      53734
+    ]
+  },
+  {
+    "version": "asyncio",
+    "concurrency": 500,
+    "runs": 2,
+    "median_seconds": 5.172,
+    "min_seconds": 5.109,
+    "max_seconds": 5.235,
+    "found_min": 5,
+    "found_max": 5,
+    "expected": 5,
+    "missed_worst_run": [],
+    "unexpected": [
+      47748,
+      57742
+    ]
+  },
+  {
+    "version": "asyncio",
+    "concurrency": 2000,
+    "runs": 2,
+    "median_seconds": 1.355,
+    "min_seconds": 1.352,
+    "max_seconds": 1.358,
+    "found_min": 0,
+    "found_max": 0,
+    "expected": 5,
+    "missed_worst_run": [
+      22,
+      80,
+      311,
+      444,
+      808
+    ],
+    "unexpected": []
+  }
+]

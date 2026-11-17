@@ -1,0 +1,27 @@
+{
+  "target": "10.0.2.15",
+  "scan_time_seconds": 0.096,
+  "timestamp": "2026-11-16T21:56:23",
+  "open_ports": [
+    22,
+    80,
+    311,
+    444,
+    808
+  ],
+  "ports_scanned": 1024,
+  "rate": 200,
+  "timeout": 0.5,
+  "outcomes": {
+    "open": 5,
+    "closed": 1019,
+    "filtered": 0,
+    "error": 0
+  },
+  "errors": {},
+  "filtered_ports": [],
+  "unknown_ports": [],
+  "unknown_ports_truncated": false,
+  "unknown_retried": 0,
+  "complete": true
+}

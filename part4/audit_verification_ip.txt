@@ -1,0 +1,19 @@
+1. Static check: where does recon.py spawn processes?
+     recon.py:82: proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)   (inside run_logged: True)
+   -> PASS: 1 spawn site(s); run_logged() spans lines 70-97
+
+2. Dynamic check: running /media/sf_Gutierrez-Ducuara_Lab3/Lab15/recon.py 10.0.2.15 --output /tmp/recon_audit_check_7omdq1l4/out with witness shims for whois, dig, curl, nmap
+     recon.py exit code: 0
+
+      #  really executed (witness)                                      logged in audit.log
+      1  nmap -sV --open --top-ports 100 -oX /tmp/recon_audit_check_7   yes
+      2  dig +short +time=5 +tries=2 -x 10.0.2.15                       yes
+      3  whois 10.0.2.15                                                yes
+      4  curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15   yes
+      5  curl -sS -I -L --max-redirs 3 --max-time 15 http://10.0.2.15   yes
+
+     commands really executed: 5 | RUN lines in audit.log: 5 | outcome lines (OK/ERROR): 5
+   -> PASS: every executed command is in audit.log, every audit entry corresponds to a command that ran, and each has an outcome
+     (work dir: /tmp/recon_audit_check_7omdq1l4)
+
+AUDIT VERIFICATION: PASS

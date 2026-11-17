@@ -1,0 +1,100 @@
+{
+  "auth": {
+    "generated": "2026-11-16T21:53:04",
+    "seed": 15,
+    "attacker_ips": {
+      "203.0.113.77": {
+        "failures": 240,
+        "style": "wordlist (many user names)"
+      },
+      "198.51.100.23": {
+        "failures": 85,
+        "style": "targeted (root only)"
+      }
+    },
+    "invalid_user_lines": 137,
+    "usernames_with_spaces": [
+      "backup admin",
+      "web master"
+    ],
+    "lines_with_space_usernames": 38,
+    "targeted_usernames": [
+      "root",
+      "admin",
+      "ubuntu",
+      "daniel",
+      "oracle",
+      "test",
+      "postgres",
+      "guest",
+      "backup admin",
+      "web master"
+    ],
+    "successful_login_after_failures": {
+      "ip": "203.0.113.77",
+      "user": "admin",
+      "method": "password"
+    },
+    "benign_noise_failures": {
+      "10.0.0.1": 6,
+      "10.0.0.2": 4,
+      "192.168.1.50": 12
+    },
+    "total_failed": 347,
+    "total_accepted": 21
+  },
+  "web": {
+    "generated": "2026-11-16T21:53:04",
+    "seed": 15,
+    "spike_hour": "19",
+    "spike_requests": 950,
+    "secondary_burst": {
+      "hour": "04",
+      "requests": 320
+    },
+    "attack_paths": {
+      "sql_injection": [
+        "/?id=1%27%20UNION%20SELECT%201,2,3--",
+        "/login?user=admin%27%20OR%20%271%27%3D%271",
+        "/item?id=5 UNION SELECT username,password FROM users--"
+      ],
+      "path_traversal": [
+        "/download?file=..%2F..%2F..%2Fetc%2Fpasswd",
+        "/static/%252e%252e%252f%252e%252e%252fetc%252fshadow"
+      ],
+      "xss": [
+        "/search?q=%3Cscript%3Ealert(document.cookie)%3C%2Fscript%3E",
+        "/comment?text=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E"
+      ],
+      "command_injection": [
+        "/cgi-bin/status.cgi?cmd=cat%20%2Fetc%2Fpasswd",
+        "/ping?host=127.0.0.1%3Bcat%20%2Fetc%2Fpasswd"
+      ]
+    },
+    "attack_path_occurrences": {
+      "/?id=1%27%20UNION%20SELECT%201,2,3--": 22,
+      "/login?user=admin%27%20OR%20%271%27%3D%271": 30,
+      "/item?id=5 UNION SELECT username,password FROM users--": 33,
+      "/download?file=..%2F..%2F..%2Fetc%2Fpasswd": 25,
+      "/static/%252e%252e%252f%252e%252e%252fetc%252fshadow": 35,
+      "/search?q=%3Cscript%3Ealert(document.cookie)%3C%2Fscript%3E": 31,
+      "/comment?text=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E": 31,
+      "/cgi-bin/status.cgi?cmd=cat%20%2Fetc%2Fpasswd": 30,
+      "/ping?host=127.0.0.1%3Bcat%20%2Fetc%2Fpasswd": 38,
+      "/wp-admin/": 35,
+      "/.env": 36
+    },
+    "probe_paths": [
+      "/wp-admin/",
+      "/.env"
+    ],
+    "benign_lookalike_paths": [
+      "/search?q=trade%20union%20select%20committee"
+    ],
+    "attacker_ips": [
+      "203.0.113.77",
+      "198.51.100.23"
+    ],
+    "total_requests": 3415
+  }
+}

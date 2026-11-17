@@ -1,0 +1,40 @@
+[
+  {
+    "ip": "10.0.2.15",
+    "hostname": null,
+    "open_ports": [
+      {
+        "port": 22,
+        "service": "ssh",
+        "version": "OpenSSH 10.3p1 Debian 4"
+      },
+      {
+        "port": 80,
+        "service": "http",
+        "version": "Apache httpd 2.4.68"
+      },
+      {
+        "port": 311,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      },
+      {
+        "port": 444,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      },
+      {
+        "port": 808,
+        "service": "http",
+        "version": "SimpleHTTPServer 0.6"
+      }
+    ],
+    "ssh_host_key_type": "ssh-ed25519",
+    "ssh_host_key_types": [
+      "ssh-ed25519",
+      "ecdsa-sha2-nistp256",
+      "ssh-rsa"
+    ],
+    "ssh_legacy_key": false
+  }
+]
